@@ -1,0 +1,79 @@
+{
+  "name": "@riadmefti/agentlens",
+  "version": "0.1.0",
+  "description": "Local, vendor-neutral HTML review loops for coding agents.",
+  "type": "module",
+  "bin": {
+    "agentlens": "dist/node/cli.js"
+  },
+  "files": [
+    "dist",
+    "examples",
+    "skills",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "npm run build:node && npm run build:ui && npm run build:bridge",
+    "build:node": "tsc -p tsconfig.node.json",
+    "build:ui": "vite build --config vite.config.ts",
+    "build:bridge": "vite build --config vite.bridge.config.ts",
+    "typecheck": "tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.ui.json --noEmit",
+    "dev:cli": "tsx src/node/cli.ts",
+    "test": "vitest run --exclude tests/e2e/**",
+    "test:e2e": "npm run build && playwright test",
+    "test:all": "npm run typecheck && npm test && npm run test:e2e && npm run smoke:agents",
+    "smoke:agents": "node scripts/smoke-agents.mjs",
+    "prepare": "npm run build"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "keywords": [
+    "agents",
+    "annotation",
+    "html",
+    "review",
+    "local-first",
+    "human-in-the-loop",
+    "developer-tools",
+    "codex",
+    "claude-code",
+    "opencode"
+  ],
+  "author": "Riad Mefti",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RiadMefti/agentlens.git"
+  },
+  "bugs": {
+    "url": "https://github.com/RiadMefti/agentlens/issues"
+  },
+  "homepage": "https://github.com/RiadMefti/agentlens#readme",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "dependencies": {
+    "chokidar": "^5.0.0",
+    "express": "^5.2.1",
+    "open": "^11.0.1",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "^6.1.0",
+    "jsdom": "^30.0.1",
+    "tsx": "^4.23.12",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.2",
+    "vitest": "^4.1.11"
+  }
+}
