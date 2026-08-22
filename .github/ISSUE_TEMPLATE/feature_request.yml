@@ -1,5 +1,5 @@
 name: Feature request
-description: Propose a focused improvement to the local review loop.
+description: Suggest a change to the local review loop.
 title: "feature: "
 labels: [enhancement]
 body:
@@ -14,7 +14,7 @@ body:
     id: outcome
     attributes:
       label: Desired outcome
-      description: Describe the user-visible result without prescribing a proprietary artifact format.
+      description: Describe what you want to happen, not how to implement it.
     validations:
       required: true
   - type: textarea

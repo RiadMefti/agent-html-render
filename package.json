@@ -1,7 +1,7 @@
 {
   "name": "agent-html-render",
   "version": "0.3.1",
-  "description": "Local visual review loops for coding agents using ordinary HTML.",
+  "description": "Review agent-written HTML locally and send element-level feedback to the agent.",
   "type": "module",
   "bin": {
     "agent-html-render": "dist/node/cli.js"

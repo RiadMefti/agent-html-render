@@ -49,7 +49,7 @@ function reviewActivity(
     return {
       kind: "sending",
       label: "Sending feedback",
-      detail: "Agent HTML Render is saving and delivering your notes. They will stay in the review dialog until this succeeds.",
+      detail: "Your notes stay in the review dialog until delivery succeeds.",
     };
   }
   if (sendError) {
@@ -72,21 +72,21 @@ function reviewActivity(
     return {
       kind: "ready",
       label: "Ready to review",
-      detail: "Interact with the artifact, or choose Annotate to leave precise feedback.",
+      detail: "Use the artifact normally, or choose Annotate to comment on an exact part.",
     };
   }
   if (session.revision > latest.revision) {
     return {
       kind: "updated",
       label: `Revision ${session.revision} ready`,
-      detail: `The artifact changed after feedback ${latest.sequence}. Review the update or send another note.`,
+      detail: `The agent changed the artifact after feedback ${latest.sequence}. Review the update or add another note.`,
     };
   }
   if (session.deliveredFeedbackSequence >= latest.sequence) {
     return {
       kind: "working",
       label: "Agent received feedback",
-      detail: `Feedback ${latest.sequence} is with the agent. Waiting for revision ${latest.revision + 1}; this page will update automatically.`,
+      detail: `Waiting for revision ${latest.revision + 1}. This page will update when it arrives.`,
     };
   }
   return {
@@ -480,7 +480,7 @@ export function App(): React.JSX.Element {
     ? activity.kind === "working"
       ? {
           title: "Waiting for the agent’s update",
-          detail: `Feedback ${session.latestFeedback.sequence} was received. This view will refresh when the artifact changes.`,
+          detail: `The agent received feedback ${session.latestFeedback.sequence}. This view will refresh when the artifact changes.`,
         }
       : activity.kind === "queued"
         ? {

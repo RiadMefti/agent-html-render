@@ -91,7 +91,7 @@ Usage:
   agent-html-render --help
 
 The review command opens or resumes a local browser session, waits for the
-reviewer to send feedback, prints one bounded response, and exits.`;
+reviewer to send feedback, prints one feedback batch, and exits.`;
 }
 
 async function responseJson<T>(response: Response): Promise<T> {

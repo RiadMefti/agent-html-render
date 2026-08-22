@@ -192,7 +192,7 @@ test("completes a safe two-revision annotation loop", async ({ page }) => {
   await expect(page.getByTestId("review-activity")).toContainText("Agent received feedback");
   await expect(page.getByTestId("review-activity")).toContainText("Waiting for revision 2");
   await expect(page.getByTestId("waiting-feedback")).toContainText("Waiting for the agent’s update");
-  await expect(page.getByTestId("waiting-feedback")).toContainText("Feedback 1 was received");
+  await expect(page.getByTestId("waiting-feedback")).toContainText("The agent received feedback 1");
   await page.screenshot({ path: "/tmp/agent-html-render-waiting.png", fullPage: true });
   const firstDelivery = await firstReview.completion;
   expect(firstDelivery.sequence).toBe(1);

@@ -2,40 +2,29 @@
 
 [![CI](https://github.com/RiadMefti/agent-html-render/actions/workflows/ci.yml/badge.svg)](https://github.com/RiadMefti/agent-html-render/actions/workflows/ci.yml)
 
-Point at the exact part. Tell the agent what should change.
+Point to the exact part. Tell the agent what to change.
 
-Agent HTML Render is a local visual review loop for coding agents. An agent writes an ordinary HTML file, Agent HTML Render opens it in a safe review surface, and you attach comments to elements or exact text. The agent receives bounded, structured feedback and revises the same file.
+Agent HTML Render opens agent-written HTML in a local browser. Comment on an element or exact text, send one feedback batch, and review the next revision on the same page.
 
-It works with Codex, Claude Code, OpenCode, and any other agent that can run a CLI. There is no account, hosted artifact format, proprietary schema, or vendor-specific runtime.
+It works with Codex, Claude Code, OpenCode, and any other agent that can run a CLI. Artifacts stay as ordinary HTML, and reviews need no account or hosted service.
 
-## Why Agent HTML Render
+## Install the project skill
 
-- **Ordinary HTML.** Agents use the web platform instead of a proprietary artifact format.
-- **Precise feedback.** Comments retain stable IDs, DOM paths, CSS paths, text quotes, and heading context.
-- **Visible handoff.** The shell shows when feedback is sending, queued, received by the agent, or followed by a revision.
-- **Resumable delivery.** Feedback remains queued until the agent CLI acknowledges it, so an interrupted wait can safely resume.
-- **Local first.** The server binds to loopback, session state stays in the project, and artifacts run in a sandboxed iframe.
-- **Vendor neutral.** One review command and one portable skill work across coding-agent hosts.
-
-## Quick start
-
-Agent HTML Render requires Node.js 20.19 or newer. Install its project skill without installing a global package:
+Agent HTML Render requires Node.js 20.19 or newer. Run this once in each repository:
 
 ```bash
 npx --yes --prefer-online agent-html-render@latest install-skill
 ```
 
-This installs the canonical skill at `.agents/skills/agent-html-render` for Codex and OpenCode, then links `.claude/skills/agent-html-render` to it for Claude Code. Existing, different skills are never overwritten.
+The command writes the shared skill to `.agents/skills/agent-html-render` for Codex and OpenCode, then links Claude Code to it from `.claude/skills/agent-html-render`. It leaves an existing, different skill untouched.
 
-The npm package, executable, and skill all use `agent-html-render`. The skill invokes `agent-html-render@latest` through `npx`, so there is no global installation to maintain. npm checks for the current release and reuses its local cache when possible.
+The skill runs `agent-html-render@latest` through `npx`. There is no global install or manual update step.
 
-Now ask your agent:
+Ask your agent:
 
 > Create a reviewable rollout plan with Agent HTML Render. Keep the HTML self-contained and wait for my feedback.
 
-The agent creates an HTML file, starts the review command, and waits while you annotate it.
-
-## Review loop
+## How a review works
 
 ```text
 agent writes HTML
@@ -48,17 +37,11 @@ the agent receives structured feedback and revises the file
         ↺
 ```
 
-Use **Send to Agent** for another revision or **Send & End** to close the session. The activity display in the header distinguishes these states:
+Use **Send to Agent** for another revision or **Send & End** to close the session. The header shows whether feedback is saving, waiting for an agent command, received by the agent, or followed by a new revision. A failed send leaves the draft ready to retry.
 
-- feedback is being saved;
-- feedback is queued but no agent command has picked it up;
-- the agent command received the batch and Agent HTML Render is waiting for a revision;
-- a new revision is ready to inspect;
-- delivery failed and the draft remains available to retry.
+The artifact stays interactive. Choose **Annotate** to select an element or exact text, then open **Review** to inspect and send the batch. Click a numbered marker or its row in **Review** to edit or remove an annotation.
 
-The artifact is interactive by default. Choose **Annotate** only when you want to select an element or exact text, then use **Review** to inspect and send the queued batch. Click a numbered marker—or its row in **Review**—to edit or remove an annotation before sending.
-
-After **Send to Agent**, a compact waiting indicator remains over the artifact without blocking interaction. It distinguishes locally queued feedback from feedback already received by the agent and disappears when the next revision arrives.
+After **Send to Agent**, a small status message says whether the feedback is still queued or has reached the agent. It disappears when the next revision arrives.
 
 ## CLI
 
@@ -77,17 +60,17 @@ npx --yes --prefer-online agent-html-render@latest review examples/plan.html
 
 Use `--format markdown` when an agent prefers readable feedback instead of JSON. Use `--no-open` in headless environments and open the printed loopback URL manually.
 
-## Artifact contract
+## HTML artifacts
 
 - HTML remains ordinary, portable, and self-contained.
-- Project design systems and user direction take precedence. The bundled minimal theme is only a fallback.
-- Important regions should use stable `data-agent-html-render-id` values so annotations survive revisions.
+- Follow the user's direction or the project's design system. The bundled theme is a fallback.
+- Give important regions stable `data-agent-html-render-id` values so annotations survive revisions.
 - Inline CSS is supported. Authored scripts, forms, frames, navigation, and network requests are blocked by default.
 - Reviewable artifacts must be `.html` files inside the project and no larger than 5 MB.
 
-## Feedback contract
+## Feedback output
 
-Each send returns a revision-bound envelope on stdout:
+Each send writes a revision-bound envelope to stdout:
 
 ```json
 {
@@ -107,7 +90,9 @@ Each send returns a revision-bound envelope on stdout:
 }
 ```
 
-Reviewer instructions are separated from artifact excerpts. Artifact text is explicitly labeled as untrusted reference context before it reaches the agent.
+Annotations include stable IDs, DOM and CSS paths, text quotes, and heading context so they can reattach after revisions. Feedback stays queued until the agent command acknowledges it, so rerunning an interrupted command does not lose the batch.
+
+Reviewer instructions and artifact excerpts stay separate. The output labels artifact text as untrusted reference context.
 
 ## Security model
 
@@ -119,7 +104,7 @@ Reviewer instructions are separated from artifact excerpts. Artifact text is exp
 - Runtime messages and feedback payloads are validated and bounded.
 - Session files are written under `.agent-html-render/` with private permissions and are ignored by Git.
 
-Agent HTML Render v0.2 is intentionally local and single-reviewer. It does not provide accounts, cloud sync, hosted sharing, or multiplayer review.
+Agent HTML Render v0.3 supports one reviewer on the local machine. Accounts, cloud sync, hosted sharing, and multiplayer review are out of scope.
 
 ## Migrating from AgentLens or the AgentRender preview
 
@@ -141,9 +126,9 @@ npm run test:all
 npm pack --dry-run
 ```
 
-`test:all` runs type checking, unit tests, the production Chromium review flow, and strict local smoke checks for Codex, Claude Code, and OpenCode. The three agent CLIs must be installed.
+`test:all` runs type checking, unit tests, the production Chromium flow, and local smoke checks for Codex, Claude Code, and OpenCode. All three agent CLIs must be installed.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development expectations. Please report vulnerabilities through [GitHub private vulnerability reporting](https://github.com/RiadMefti/agent-html-render/security/advisories/new), not a public issue.
+See [CONTRIBUTING.md](CONTRIBUTING.md) before sending a patch. Report vulnerabilities through [GitHub private vulnerability reporting](https://github.com/RiadMefti/agent-html-render/security/advisories/new).
 
 ## License
 
