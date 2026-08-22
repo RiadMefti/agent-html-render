@@ -2,6 +2,10 @@
 
 All notable changes to Agent HTML Render are documented here.
 
+## Unreleased
+
+- Let agents add diagrams when they materially improve understanding, with inline SVG suggested as an annotatable option rather than a required framework.
+
 ## 0.3.0 — 2026-08-22
 
 - Made the Annotate and Review controls visually distinct, with compact bordered buttons and an explicit active state.

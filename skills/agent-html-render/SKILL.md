@@ -12,6 +12,7 @@ Create an ordinary, self-contained HTML artifact and let the user review it in A
 - Write the artifact to `.agent-html-render/<short-topic>.html` unless the user provides another in-project path.
 - Keep it self-contained and portable. Inline its CSS; do not depend on JavaScript, remote assets, or network requests because the review sandbox blocks them by default.
 - Use semantic, responsive HTML. Add stable `data-agent-html-render-id` values to important review regions so comments survive revisions.
+- When a diagram would materially improve understanding, include one using the browser-native approach that best fits the subject. Inline SVG is often useful because its parts remain individually reviewable, but it is not required. Do not impose a fixed diagram grammar, layout, or framework.
 - Follow the user's design direction or an existing project design system. Otherwise read [references/theme.md](references/theme.md) and use that visual grammar as the default. Treat it as a theme, not a prescribed layout.
 - Do not add controls for annotations or feedback inside the artifact; Agent HTML Render supplies those outside it.
 
