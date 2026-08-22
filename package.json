@@ -1,6 +1,6 @@
 {
   "name": "agent-html-render",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Local visual review loops for coding agents using ordinary HTML.",
   "type": "module",
   "bin": {

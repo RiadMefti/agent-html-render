@@ -2,6 +2,11 @@
 
 All notable changes to Agent HTML Render are documented here.
 
+## 0.2.1 — 2026-08-22
+
+- Fixed review-shell delivery when `npx` runs Agent HTML Render from npm's hidden cache directory.
+- Added a regression test covering packaged execution from `.npm/_npx/` paths.
+
 ## 0.2.0 — 2026-08-22
 
 - Renamed the project, repository, package, CLI, review shell, and portable skill from AgentLens to Agent HTML Render.

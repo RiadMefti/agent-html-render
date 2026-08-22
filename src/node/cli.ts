@@ -15,7 +15,7 @@ import {
 import type { AgentSessionSummary } from "./server.js";
 import { installProjectSkill } from "./install.js";
 
-const VERSION = "0.2.0";
+const VERSION = "0.2.1";
 const MODULE_DIRECTORY = dirname(fileURLToPath(import.meta.url));
 const BUNDLED_SKILL_DIRECTORY = resolve(MODULE_DIRECTORY, "../../skills/agent-html-render");
 

@@ -82,7 +82,7 @@ export async function startServer(options: StartServerOptions): Promise<RunningS
   const uiDirectory = options.uiDirectory ?? DEFAULT_UI_DIRECTORY;
   const bridgeSource = options.bridgeSource ?? (await readFile(DEFAULT_BRIDGE_PATH, "utf8"));
   const uiIndexPath = join(uiDirectory, "index.html");
-  await readFile(uiIndexPath, "utf8");
+  const uiIndexHtml = await readFile(uiIndexPath, "utf8");
 
   const store = new SessionStore(rootPath);
   await store.initialize();
@@ -250,7 +250,7 @@ export async function startServer(options: StartServerOptions): Promise<RunningS
       "Content-Security-Policy",
       "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; frame-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'",
     );
-    response.sendFile(uiIndexPath);
+    response.type("html").send(uiIndexHtml);
   });
 
   app.get("/api/review/:id/state", (request, response) => {
