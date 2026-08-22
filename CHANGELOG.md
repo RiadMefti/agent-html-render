@@ -2,6 +2,12 @@
 
 All notable changes to Agent HTML Render are documented here.
 
+## 0.3.0 — 2026-08-22
+
+- Made the Annotate and Review controls visually distinct, with compact bordered buttons and an explicit active state.
+- Made queued annotations editable from both their numbered artifact marker and the Review list, with save and remove actions.
+- Added a non-blocking waiting indicator after feedback is sent, distinguishing saved feedback from feedback already received by the agent.
+
 ## 0.2.2 — 2026-08-22
 
 - Replaced the persistent review drawer and Annotate/Interact tabs with default artifact interaction, a focused annotation composer, and a compact review dialog.

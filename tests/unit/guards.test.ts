@@ -23,6 +23,17 @@ describe("bridge message guards", () => {
       ),
     ).toBe(true);
     expect(
+      isBridgeToParentMessage(
+        {
+          source: "agent-html-render-bridge",
+          token: "token",
+          type: "annotation-activated",
+          annotationId: "annotation",
+        },
+        "token",
+      ),
+    ).toBe(true);
+    expect(
       isParentToBridgeMessage(
         {
           source: "agent-html-render-shell",
@@ -56,6 +67,17 @@ describe("bridge message guards", () => {
           token: "token",
           type: "target-selected",
           target: { ...target, headingPath: null },
+        },
+        "token",
+      ),
+    ).toBe(false);
+    expect(
+      isBridgeToParentMessage(
+        {
+          source: "agent-html-render-bridge",
+          token: "token",
+          type: "annotation-activated",
+          annotationId: "x".repeat(121),
         },
         "token",
       ),

@@ -122,6 +122,12 @@ export type BridgeToParentMessage =
   | {
       source: "agent-html-render-bridge";
       token: string;
+      type: "annotation-activated";
+      annotationId: string;
+    }
+  | {
+      source: "agent-html-render-bridge";
+      token: string;
       type: "anchor-resolutions";
       resolutions: Array<{ id: string; resolution: AnchorResolution }>;
     };

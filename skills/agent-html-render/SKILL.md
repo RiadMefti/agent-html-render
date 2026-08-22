@@ -26,6 +26,8 @@ Use `npx --yes --prefer-online agent-html-render@latest` for every Agent HTML Re
 5. Run the same review command again after each revision. The open session resumes and the artifact reloads automatically.
 6. Stop when `feedback.status` is `ended`. Do not reopen an ended review unless the user asks.
 
+After a non-ending feedback batch returns, the review shell waits for the artifact revision to change. Apply requested edits promptly; if no artifact edit is appropriate, tell the user explicitly instead of leaving the outcome ambiguous.
+
 If the review command or its host is interrupted, run the exact command again. Pending feedback remains resumable until the CLI acknowledges that it wrote the batch to stdout.
 
 Keep chat updates brief: tell the user when the review is ready, when feedback is being applied, and when the session has ended.

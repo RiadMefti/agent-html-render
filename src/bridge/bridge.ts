@@ -40,7 +40,11 @@ function start(): void {
     );
   }
 
-  function createOverlay(kind: "hover" | "selection" | "annotation", label?: string): HTMLDivElement {
+  function createOverlay(
+    kind: "hover" | "selection" | "annotation",
+    label?: string,
+    annotationId?: string,
+  ): HTMLDivElement {
     const overlay = document.createElement("div");
     overlay.dataset.agentHtmlRenderBridge = kind;
     Object.assign(overlay.style, {
@@ -66,8 +70,26 @@ function start(): void {
       boxShadow: "none",
     });
     if (label) {
-      const pin = document.createElement("span");
+      const pin = annotationId ? document.createElement("button") : document.createElement("span");
       pin.textContent = label;
+      if (pin instanceof HTMLButtonElement && annotationId) {
+        pin.type = "button";
+        pin.title = `Edit annotation ${label}`;
+        pin.setAttribute("aria-label", `Edit annotation ${label}`);
+        pin.addEventListener("pointerenter", () => {
+          pin.style.background = "#171717";
+          pin.style.color = "#fafafa";
+        });
+        pin.addEventListener("pointerleave", () => {
+          pin.style.background = "#fafafa";
+          pin.style.color = "#171717";
+        });
+        pin.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          post({ type: "annotation-activated", annotationId });
+        });
+      }
       Object.assign(pin.style, {
         position: "absolute",
         top: "-21px",
@@ -80,7 +102,10 @@ function start(): void {
         borderRadius: "0",
         background: "#fafafa",
         color: "#171717",
+        cursor: annotationId ? "pointer" : "default",
         font: "500 10px/1 -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif",
+        padding: "0",
+        pointerEvents: annotationId ? "auto" : "none",
         boxShadow: "none",
       });
       overlay.append(pin);
@@ -152,7 +177,7 @@ function start(): void {
         resolutions.push({ id: annotation.id, resolution: "unresolved" });
         return;
       }
-      const overlay = createOverlay("annotation", String(index + 1));
+      const overlay = createOverlay("annotation", String(index + 1), annotation.id);
       paint(overlay, resolved.element, resolved.range);
       paintedAnchors.set(annotation.id, { annotation, overlay });
       resolutions.push({ id: annotation.id, resolution: "attached" });
@@ -199,6 +224,8 @@ function start(): void {
   document.addEventListener(
     "click",
     (event) => {
+      const eventTarget = event.composedPath()[0] ?? event.target;
+      if (eventTarget instanceof Element && bridgeElement(eventTarget)) return;
       if (!selectionMode) {
         const element = elementFromEvent(event);
         const link = element?.closest("a[href]");

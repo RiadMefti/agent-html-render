@@ -56,7 +56,9 @@ Use **Send to Agent** for another revision or **Send & End** to close the sessio
 - a new revision is ready to inspect;
 - delivery failed and the draft remains available to retry.
 
-The artifact is interactive by default. Choose **Annotate** only when you want to select an element or exact text, then use **Review** to inspect and send the queued batch.
+The artifact is interactive by default. Choose **Annotate** only when you want to select an element or exact text, then use **Review** to inspect and send the queued batch. Click a numbered marker—or its row in **Review**—to edit or remove an annotation before sending.
+
+After **Send to Agent**, a compact waiting indicator remains over the artifact without blocking interaction. It distinguishes locally queued feedback from feedback already received by the agent and disappears when the next revision arrives.
 
 ## CLI
 

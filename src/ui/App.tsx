@@ -142,6 +142,7 @@ export function App(): React.JSX.Element {
   const [session, setSession] = useState<PublicSessionState | null>(null);
   const [draft, setDraft] = useState<ReviewDraft>(EMPTY_DRAFT);
   const [selectedTarget, setSelectedTarget] = useState<TargetDescriptor | null>(null);
+  const [editingAnnotationId, setEditingAnnotationId] = useState<string | null>(null);
   const [comment, setComment] = useState("");
   const [selectionMode, setSelectionMode] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
@@ -167,6 +168,19 @@ export function App(): React.JSX.Element {
   const showDraftTargets = useCallback(
     (nextDraft: ReviewDraft) => {
       sendToBridge({ type: "show-annotations", annotations: nextDraft.annotations });
+    },
+    [sendToBridge],
+  );
+
+  const openAnnotationEditor = useCallback(
+    (annotation: DraftAnnotation) => {
+      setSelectedTarget(annotation.target);
+      setEditingAnnotationId(annotation.id);
+      setComment(annotation.comment);
+      setSelectionMode(false);
+      setReviewOpen(false);
+      setNotice(null);
+      sendToBridge({ type: "clear-selection" });
     },
     [sendToBridge],
   );
@@ -276,7 +290,11 @@ export function App(): React.JSX.Element {
         showDraftTargets(draft);
       } else if (message.type === "target-selected") {
         setSelectedTarget(message.target);
+        setEditingAnnotationId(null);
         setComment("");
+      } else if (message.type === "annotation-activated") {
+        const annotation = draft.annotations.find((candidate) => candidate.id === message.annotationId);
+        if (annotation) openAnnotationEditor(annotation);
       } else if (message.type === "anchor-resolutions") {
         setDraft((current) => ({
           ...current,
@@ -289,7 +307,7 @@ export function App(): React.JSX.Element {
     };
     window.addEventListener("message", listener);
     return () => window.removeEventListener("message", listener);
-  }, [draft, selectionMode, sendToBridge, session, showDraftTargets]);
+  }, [draft, openAnnotationEditor, selectionMode, sendToBridge, session, showDraftTargets]);
 
   useEffect(() => {
     sendToBridge({ type: "set-selection-mode", enabled: selectionMode });
@@ -305,6 +323,7 @@ export function App(): React.JSX.Element {
       if (selectionMode || selectedTarget) {
         setSelectionMode(false);
         setSelectedTarget(null);
+        setEditingAnnotationId(null);
         setComment("");
         sendToBridge({ type: "clear-selection" });
       }
@@ -334,26 +353,41 @@ export function App(): React.JSX.Element {
     [showDraftTargets],
   );
 
-  const addAnnotation = (): void => {
+  const saveAnnotation = (): void => {
     if (!selectedTarget || !comment.trim()) return;
-    const annotation: DraftAnnotation = {
-      id: crypto.randomUUID(),
-      comment: comment.trim(),
-      createdAt: new Date().toISOString(),
-      target: selectedTarget,
-      resolution: "attached",
-    };
-    const nextDraft = { ...draft, annotations: [...draft.annotations, annotation] };
+    const trimmedComment = comment.trim();
+    const nextDraft = editingAnnotationId
+      ? {
+          ...draft,
+          annotations: draft.annotations.map((annotation) =>
+            annotation.id === editingAnnotationId ? { ...annotation, comment: trimmedComment } : annotation,
+          ),
+        }
+      : {
+          ...draft,
+          annotations: [
+            ...draft.annotations,
+            {
+              id: crypto.randomUUID(),
+              comment: trimmedComment,
+              createdAt: new Date().toISOString(),
+              target: selectedTarget,
+              resolution: "attached" as const,
+            },
+          ],
+        };
     updateDraft(nextDraft);
     setSelectedTarget(null);
+    setEditingAnnotationId(null);
     setComment("");
     setSelectionMode(false);
     sendToBridge({ type: "clear-selection" });
-    setNotice("Annotation queued.");
+    setNotice(editingAnnotationId ? "Annotation updated." : "Annotation queued.");
   };
 
   const clearSelection = (): void => {
     setSelectedTarget(null);
+    setEditingAnnotationId(null);
     setComment("");
     setSelectionMode(false);
     sendToBridge({ type: "clear-selection" });
@@ -371,6 +405,8 @@ export function App(): React.JSX.Element {
 
   const removeAnnotation = (id: string): void => {
     updateDraft({ ...draft, annotations: draft.annotations.filter((annotation) => annotation.id !== id) });
+    if (editingAnnotationId === id) clearSelection();
+    setNotice("Annotation removed.");
   };
 
   const sendFeedback = async (end: boolean): Promise<void> => {
@@ -391,6 +427,7 @@ export function App(): React.JSX.Element {
       );
       setDraft(EMPTY_DRAFT);
       setSelectedTarget(null);
+      setEditingAnnotationId(null);
       setComment("");
       setSelectionMode(false);
       setReviewOpen(false);
@@ -439,6 +476,19 @@ export function App(): React.JSX.Element {
   const artifactUrl = `/api/review/${encodeURIComponent(session.id)}/artifact?${accessQuery}&revision=${session.revision}`;
   const ended = session.status === "ended";
   const activity = reviewActivity(session, connected, busy, sendError);
+  const waitingFeedback = session.latestFeedback
+    ? activity.kind === "working"
+      ? {
+          title: "Waiting for the agent’s update",
+          detail: `Feedback ${session.latestFeedback.sequence} was received. This view will refresh when the artifact changes.`,
+        }
+      : activity.kind === "queued"
+        ? {
+            title: "Waiting for the agent",
+            detail: `Feedback ${session.latestFeedback.sequence} is saved. It will be delivered when the agent connects.`,
+          }
+        : null
+    : null;
 
   return (
     <main className="review-app">
@@ -465,26 +515,28 @@ export function App(): React.JSX.Element {
           <span className="session-status">
             <span data-testid="revision">r{session.revision}</span> · {connected ? "Live" : "Reconnecting"}
           </span>
-          <button
-            className={`nav-action ${selectionMode ? "active" : ""}`}
-            type="button"
-            disabled={ended}
-            aria-pressed={selectionMode}
-            onClick={toggleSelectionMode}
-          >
-            {selectionMode ? "Cancel" : "Annotate"}
-          </button>
-          <button
-            className={`nav-action ${reviewOpen ? "active" : ""}`}
-            type="button"
-            aria-haspopup="dialog"
-            aria-expanded={reviewOpen}
-            aria-controls="review-dialog"
-            aria-label={draft.annotations.length > 0 ? `Review (${draft.annotations.length})` : "Review"}
-            onClick={() => setReviewOpen(true)}
-          >
-            Review{draft.annotations.length > 0 ? <span className="review-count">{draft.annotations.length}</span> : null}
-          </button>
+          <span className="review-action-group">
+            <button
+              className={`nav-action ${selectionMode ? "active" : ""}`}
+              type="button"
+              disabled={ended}
+              aria-pressed={selectionMode}
+              onClick={toggleSelectionMode}
+            >
+              {selectionMode ? "Cancel" : "Annotate"}
+            </button>
+            <button
+              className={`nav-action ${reviewOpen ? "active" : ""}`}
+              type="button"
+              aria-haspopup="dialog"
+              aria-expanded={reviewOpen}
+              aria-controls="review-dialog"
+              aria-label={draft.annotations.length > 0 ? `Review (${draft.annotations.length})` : "Review"}
+              onClick={() => setReviewOpen(true)}
+            >
+              Review{draft.annotations.length > 0 ? <span className="review-count">{draft.annotations.length}</span> : null}
+            </button>
+          </span>
         </nav>
       </header>
 
@@ -494,6 +546,22 @@ export function App(): React.JSX.Element {
             <div className="selection-hint" role="status">
               <span>Select an element or exact text to annotate</span>
               <small>Esc to cancel</small>
+            </div>
+          ) : null}
+          {waitingFeedback && !selectedTarget && !ended ? (
+            <div
+              className="waiting-feedback"
+              data-state={activity.kind}
+              data-testid="waiting-feedback"
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+            >
+              <span className="waiting-indicator" aria-hidden="true" />
+              <span className="waiting-copy">
+                <strong>{waitingFeedback.title}</strong>
+                <span>{waitingFeedback.detail}</span>
+              </span>
             </div>
           ) : null}
           <iframe
@@ -525,11 +593,11 @@ export function App(): React.JSX.Element {
             className="annotation-composer"
             data-testid="selection-card"
             role="dialog"
-            aria-label="Add annotation"
+            aria-label={editingAnnotationId ? "Edit annotation" : "Add annotation"}
           >
             <div className="selection-title">
               <div>
-                <span className="section-label">Selected</span>
+                <span className="section-label">{editingAnnotationId ? "Editing annotation" : "Selected"}</span>
                 <strong>{targetTitle(selectedTarget)}</strong>
               </div>
               <small>{targetMeta(selectedTarget)}</small>
@@ -550,23 +618,32 @@ export function App(): React.JSX.Element {
                 onKeyDown={(event) => {
                   if ((event.metaKey || event.ctrlKey) && event.key === "Enter" && comment.trim()) {
                     event.preventDefault();
-                    addAnnotation();
+                    saveAnnotation();
                   }
                 }}
               />
             </label>
             <div className="selection-actions">
+              {editingAnnotationId ? (
+                <button
+                  className="quiet-action delete-action"
+                  type="button"
+                  onClick={() => removeAnnotation(editingAnnotationId)}
+                >
+                  Remove
+                </button>
+              ) : null}
               <button className="quiet-action" type="button" onClick={clearSelection}>
                 Cancel
               </button>
               <button
                 className="primary-action"
-                data-testid="add-annotation"
+                data-testid={editingAnnotationId ? "save-annotation" : "add-annotation"}
                 type="button"
                 disabled={!comment.trim()}
-                onClick={addAnnotation}
+                onClick={saveAnnotation}
               >
-                Add annotation
+                {editingAnnotationId ? "Save changes" : "Add annotation"}
               </button>
             </div>
           </section>
@@ -601,16 +678,25 @@ export function App(): React.JSX.Element {
                   {draft.annotations.map((annotation, index) => (
                     <article className="annotation-row" key={annotation.id} data-testid="queued-annotation">
                       <div className="annotation-number">{String(index + 1).padStart(2, "0")}</div>
-                      <div className="annotation-copy">
-                        <div className="annotation-target">
+                      <button
+                        className="annotation-copy annotation-edit"
+                        type="button"
+                        disabled={ended}
+                        aria-label={`Edit annotation ${index + 1}`}
+                        onClick={() => openAnnotationEditor(annotation)}
+                      >
+                        <span className="annotation-target">
                           <span>{targetMeta(annotation.target)}</span>
-                          <i className={annotation.resolution === "unresolved" ? "unresolved" : "attached"}>
-                            {annotation.resolution === "unresolved" ? "Unresolved" : "Attached"}
-                          </i>
-                        </div>
+                          <span className="annotation-meta">
+                            <i className={annotation.resolution === "unresolved" ? "unresolved" : "attached"}>
+                              {annotation.resolution === "unresolved" ? "Unresolved" : "Attached"}
+                            </i>
+                            <span className="edit-cue" aria-hidden="true">Edit</span>
+                          </span>
+                        </span>
                         <strong>{targetTitle(annotation.target)}</strong>
-                        <p>{annotation.comment}</p>
-                      </div>
+                        <span className="annotation-comment">{annotation.comment}</span>
+                      </button>
                       <button
                         className="remove-button"
                         type="button"

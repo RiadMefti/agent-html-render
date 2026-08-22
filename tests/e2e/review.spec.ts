@@ -121,7 +121,10 @@ test("completes a safe two-revision annotation loop", async ({ page }) => {
   await page.goto(reviewUrl);
 
   await expect(page.getByText("agent-html-render", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Annotate" })).toHaveAttribute("aria-pressed", "false");
+  const annotateButton = page.getByRole("button", { name: "Annotate" });
+  await expect(annotateButton).toHaveAttribute("aria-pressed", "false");
+  await expect(annotateButton).toHaveCSS("border-top-width", "1px");
+  await expect(annotateButton).toHaveCSS("border-top-style", "solid");
   await expect(page.getByRole("button", { name: "Interact" })).toHaveCount(0);
   await expect(page.locator("header").getByTestId("review-activity")).toBeVisible();
   await expect(page.getByTestId("revision")).toHaveText("r1");
@@ -141,7 +144,8 @@ test("completes a safe two-revision annotation loop", async ({ page }) => {
   });
   await artifact.getByRole("link", { name: "External test link" }).click();
   await expect(artifact.getByRole("heading", { name: "Authentication rollout" })).toBeVisible();
-  await page.getByRole("button", { name: "Annotate" }).click();
+  await annotateButton.click();
+  await expect(page.getByRole("button", { name: "Cancel" })).toHaveCSS("background-color", "rgb(23, 23, 23)");
 
   await artifact.getByRole("heading", { name: "Invite returning users" }).click();
   await expect(page.getByTestId("selection-card")).toBeVisible();
@@ -150,10 +154,24 @@ test("completes a safe two-revision annotation loop", async ({ page }) => {
   await page.screenshot({ path: "/tmp/agent-html-render-annotation-composer.png", fullPage: true });
   await page.getByTestId("add-annotation").click();
   await expect(page.getByTestId("selection-card")).toHaveCount(0);
-  await page.getByRole("button", { name: "Review (1)" }).click();
-  await expect(page.getByTestId("queued-annotation")).toContainText(
+  const marker = artifact.getByRole("button", { name: "Edit annotation 1" });
+  await expect(marker).toBeVisible();
+  await marker.click();
+  await expect(page.getByRole("dialog", { name: "Edit annotation" })).toBeVisible();
+  await expect(page.getByTestId("annotation-comment")).toHaveValue(
     "Clarify when the enrollment invitation appears.",
   );
+  await page.getByTestId("annotation-comment").fill("Show the invitation after the dashboard loads.");
+  await page.screenshot({ path: "/tmp/agent-html-render-annotation-edit.png", fullPage: true });
+  await page.getByTestId("save-annotation").click();
+  await expect(page.getByTestId("selection-card")).toHaveCount(0);
+  await page.getByRole("button", { name: "Review (1)" }).click();
+  await expect(page.getByTestId("queued-annotation")).toContainText("Show the invitation after the dashboard loads.");
+  await page.getByRole("button", { name: "Edit annotation 1" }).click();
+  await expect(page.getByRole("dialog", { name: "Edit annotation" })).toBeVisible();
+  await expect(page.getByTestId("annotation-comment")).toHaveValue("Show the invitation after the dashboard loads.");
+  await page.getByRole("button", { name: "Cancel" }).click();
+  await page.getByRole("button", { name: "Review (1)" }).click();
   await page.screenshot({ path: "/tmp/agent-html-render-review-dialog.png", fullPage: true });
   await page.setViewportSize({ width: 786, height: 900 });
   await expect(page.getByRole("dialog", { name: "Review" })).toBeVisible();
@@ -173,16 +191,20 @@ test("completes a safe two-revision annotation loop", async ({ page }) => {
   await expect.poll(() => server?.store.get(session.id)?.deliveredFeedbackSequence).toBe(1);
   await expect(page.getByTestId("review-activity")).toContainText("Agent received feedback");
   await expect(page.getByTestId("review-activity")).toContainText("Waiting for revision 2");
+  await expect(page.getByTestId("waiting-feedback")).toContainText("Waiting for the agent’s update");
+  await expect(page.getByTestId("waiting-feedback")).toContainText("Feedback 1 was received");
+  await page.screenshot({ path: "/tmp/agent-html-render-waiting.png", fullPage: true });
   const firstDelivery = await firstReview.completion;
   expect(firstDelivery.sequence).toBe(1);
   expect(firstDelivery.feedback.status).toBe("feedback");
   expect(firstDelivery.feedback.annotations[0]?.comment).toBe(
-    "Clarify when the enrollment invitation appears.",
+    "Show the invitation after the dashboard loads.",
   );
   await expect(page.getByTestId("queued-annotation")).toHaveCount(0);
 
   await page.reload();
   await expect(page.getByTestId("review-activity")).toContainText("Agent received feedback");
+  await expect(page.getByTestId("waiting-feedback")).toBeVisible();
 
   await page.getByRole("button", { name: "Review", exact: true }).click();
   await page.getByTestId("reviewer-message").fill("Keep the revised timeline concise.");
@@ -199,11 +221,14 @@ test("completes a safe two-revision annotation loop", async ({ page }) => {
   await page.getByTestId("send-feedback").click();
   await expect(page.getByTestId("review-activity")).toContainText("Feedback queued");
   await expect(page.getByTestId("review-activity")).toContainText("Waiting for an agent review command");
+  await expect(page.getByTestId("waiting-feedback")).toContainText("Waiting for the agent");
+  await expect(page.getByTestId("waiting-feedback")).toContainText("Feedback 2 is saved");
   expect(server.store.get(session.id)?.deliveredFeedbackSequence).toBe(1);
 
   const queuedReview = launchReview();
   await queuedReview.ready;
   await expect(page.getByTestId("review-activity")).toContainText("Agent received feedback");
+  await expect(page.getByTestId("waiting-feedback")).toContainText("Waiting for the agent’s update");
   const queuedDelivery = await queuedReview.completion;
   expect(queuedDelivery.sequence).toBe(2);
   expect(queuedDelivery.feedback.reviewerMessage).toBe("Keep the revised timeline concise.");
@@ -215,6 +240,7 @@ test("completes a safe two-revision annotation loop", async ({ page }) => {
   await writeFile(artifactPath, revisedSource);
   await expect(page.getByTestId("revision")).toHaveText("r2", { timeout: 10_000 });
   await expect(page.getByTestId("review-activity")).toContainText("Revision 2 ready");
+  await expect(page.getByTestId("waiting-feedback")).toHaveCount(0);
   await expect(artifact.getByRole("heading", { name: "Invite users at the right moment" })).toBeVisible();
 
   await page.screenshot({ path: "/tmp/agent-html-render-review-ui.png", fullPage: true });

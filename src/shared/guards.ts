@@ -146,6 +146,7 @@ export function isBridgeToParentMessage(value: unknown, token: string): value is
   if (!candidate || candidate.source !== "agent-html-render-bridge" || candidate.token !== token) return false;
   if (candidate.type === "ready") return true;
   if (candidate.type === "target-selected") return isTargetDescriptor(candidate.target);
+  if (candidate.type === "annotation-activated") return boundedString(candidate.annotationId, 120);
   if (candidate.type !== "anchor-resolutions" || !Array.isArray(candidate.resolutions)) return false;
   return (
     candidate.resolutions.length <= 100 &&
