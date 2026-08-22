@@ -4,7 +4,7 @@ import { App } from "./App.js";
 import "./styles.css";
 
 const root = document.getElementById("root");
-if (!root) throw new Error("AgentLens review root was not found.");
+if (!root) throw new Error("AgentRender review root was not found.");
 
 createRoot(root).render(
   <StrictMode>

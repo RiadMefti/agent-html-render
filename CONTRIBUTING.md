@@ -1,10 +1,10 @@
-# Contributing to AgentLens
+# Contributing to AgentRender
 
-Thanks for helping improve AgentLens. Keep contributions local-first, vendor-neutral, and small enough to review.
+Thanks for helping improve AgentRender. Keep contributions local-first, vendor-neutral, and small enough to review.
 
 ## Development setup
 
-AgentLens requires Node.js 20.19 or newer.
+AgentRender requires Node.js 20.19 or newer.
 
 ```bash
 npm ci
@@ -35,7 +35,7 @@ The host smoke check expects Codex, Claude Code, and OpenCode to be available on
 - Keep the review shell visually restrained: `#fafafa`, `#171717`, system typography, hairline separators, and flat text actions.
 - Do not impose the shell layout or fallback theme on agent-authored artifacts.
 - Add focused tests for behavior changes. Security-boundary changes need both positive and negative coverage.
-- Do not commit `dist/`, `.agentlens/`, browser reports, credentials, or local review URLs containing access tokens.
+- Do not commit `dist/`, `.agentrender/`, legacy `.agentlens/`, browser reports, credentials, or local review URLs containing access tokens.
 
 ## Pull requests
 

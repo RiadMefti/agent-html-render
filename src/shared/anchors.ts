@@ -1,7 +1,14 @@
-import type { RangeAnchor, TargetDescriptor, TextQuote } from "./protocol.js";
+import type { RangeAnchor, StableAttribute, TargetDescriptor, TextQuote } from "./protocol.js";
 
 const MAX_TARGET_TEXT = 600;
 const MAX_QUOTE_CONTEXT = 80;
+const REVIEW_DATA_ATTRIBUTES = ["data-agentrender-id", "data-agentlens-id"] as const;
+
+type ReviewDataAttribute = (typeof REVIEW_DATA_ATTRIBUTES)[number];
+
+function reviewDataAttribute(element: Element): ReviewDataAttribute | undefined {
+  return REVIEW_DATA_ATTRIBUTES.find((attribute) => element.hasAttribute(attribute));
+}
 
 function bounded(value: string, maximum: number): string {
   return value.length <= maximum ? value : `${value.slice(0, maximum - 1)}…`;
@@ -45,16 +52,18 @@ export function resolveNodePath(root: Node, path: readonly number[]): Node | nul
 }
 
 export function cssPathForElement(element: Element): string {
-  const explicitId = element.getAttribute("data-agentlens-id");
-  if (explicitId) return `[data-agentlens-id="${escapeCss(explicitId)}"]`;
+  const explicitAttribute = reviewDataAttribute(element);
+  const explicitId = explicitAttribute ? element.getAttribute(explicitAttribute) : null;
+  if (explicitAttribute && explicitId) return `[${explicitAttribute}="${escapeCss(explicitId)}"]`;
   if (element.id) return `#${escapeCss(element.id)}`;
 
   const segments: string[] = [];
   let current: Element | null = element;
   while (current && current.tagName.toLowerCase() !== "html") {
-    const ancestorAgentLensId = current.getAttribute("data-agentlens-id");
-    if (current !== element && ancestorAgentLensId) {
-      segments.unshift(`[data-agentlens-id="${escapeCss(ancestorAgentLensId)}"]`);
+    const ancestorAttribute = reviewDataAttribute(current);
+    const ancestorId = ancestorAttribute ? current.getAttribute(ancestorAttribute) : null;
+    if (current !== element && ancestorAttribute && ancestorId) {
+      segments.unshift(`[${ancestorAttribute}="${escapeCss(ancestorId)}"]`);
       break;
     }
     if (current !== element && current.id) {
@@ -173,11 +182,7 @@ export function textQuoteForRange(range: Range, root: Node): TextQuote {
 }
 
 export function targetFromElement(element: Element, root: Element): TargetDescriptor {
-  const stableAttribute = element.hasAttribute("data-agentlens-id")
-    ? "data-agentlens-id"
-    : element.id
-      ? "id"
-      : undefined;
+  const stableAttribute: StableAttribute | undefined = reviewDataAttribute(element) ?? (element.id ? "id" : undefined);
   const stableId = stableAttribute ? element.getAttribute(stableAttribute) ?? undefined : undefined;
   const role = element.getAttribute("role") ?? implicitRole(element);
   const label = labelForElement(element);
@@ -337,17 +342,23 @@ export function resolveTarget(root: Element, target: TargetDescriptor): Resolved
   }
 
   if (target.stableId && target.stableAttribute) {
-    const selector = `[${target.stableAttribute}="${escapeCss(target.stableId)}"]`;
-    const element = root.matches(selector) ? root : root.querySelector(selector);
-    if (element && element.tagName.toLowerCase() === target.tag.toLowerCase()) {
-      return { element, strategy: "stable-id" };
+    const compatibleAttributes: StableAttribute[] =
+      target.stableAttribute === "data-agentlens-id"
+        ? ["data-agentlens-id", "data-agentrender-id"]
+        : [target.stableAttribute];
+    for (const attribute of compatibleAttributes) {
+      const selector = `[${attribute}="${escapeCss(target.stableId)}"]`;
+      const element = root.matches(selector) ? root : root.querySelector(selector);
+      if (element && element.tagName.toLowerCase() === target.tag.toLowerCase()) {
+        return { element, strategy: "stable-id" };
+      }
     }
   }
 
   if (target.cssPath) {
     try {
       const element = root.matches(target.cssPath) ? root : root.querySelector(target.cssPath);
-      const pathIsStable = /(?:data-agentlens-id|#[a-zA-Z_-])/.test(target.cssPath);
+      const pathIsStable = /(?:data-agent(?:render|lens)-id|#[a-zA-Z_-])/.test(target.cssPath);
       if (element && matchingElement(element, target, pathIsStable)) {
         return { element, strategy: "css-path" };
       }

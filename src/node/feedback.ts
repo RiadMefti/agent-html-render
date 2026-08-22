@@ -46,7 +46,7 @@ export function createFeedbackEnvelope(
 
 export function formatFeedbackMarkdown(feedback: FeedbackEnvelope): string {
   const lines = [
-    "# AgentLens review feedback",
+    "# AgentRender review feedback",
     "",
     `- Artifact: ${inlineValue(feedback.session.artifactRelativePath)}`,
     `- Revision: ${feedback.session.revision}`,

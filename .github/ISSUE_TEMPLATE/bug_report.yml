@@ -1,5 +1,5 @@
 name: Bug report
-description: Report reproducible AgentLens behavior that is incorrect or unclear.
+description: Report reproducible AgentRender behavior that is incorrect or unclear.
 title: "bug: "
 labels: [bug]
 body:
@@ -9,8 +9,8 @@ body:
   - type: input
     id: version
     attributes:
-      label: AgentLens version
-      placeholder: 0.1.2
+      label: AgentRender version
+      placeholder: 0.2.0
     validations:
       required: true
   - type: input

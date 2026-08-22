@@ -1,6 +1,16 @@
 # Changelog
 
-All notable changes to AgentLens are documented here.
+All notable changes to AgentRender are documented here.
+
+## 0.2.0 — 2026-08-22
+
+- Renamed the project, repository, package, CLI, review shell, and portable skill from AgentLens to AgentRender.
+- Published the canonical unscoped package as `agentrender`, designed to run through `npx agentrender@latest`.
+- Moved project-local state and default artifacts to `.agentrender/` and stable artifact anchors to `data-agentrender-id`.
+- Preserved resolution of legacy `data-agentlens-id` anchors and added explicit migration guidance for existing projects.
+- Deprecated `@rimef/agentlens` in favor of `agentrender`.
+
+## Earlier AgentLens releases
 
 ## 0.1.2 — 2026-08-22
 

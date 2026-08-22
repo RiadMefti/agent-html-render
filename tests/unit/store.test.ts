@@ -7,7 +7,7 @@ import { SessionStore } from "../../src/node/store.js";
 
 describe("session store", () => {
   it("persists drafts, revisions, delivery cursors, and final status", async () => {
-    const root = await mkdtemp(join(tmpdir(), "agentlens-store-"));
+    const root = await mkdtemp(join(tmpdir(), "agentrender-store-"));
     const artifactPath = join(root, "review.html");
     const initial = "<h1>First revision</h1>";
     await writeFile(artifactPath, initial);
@@ -49,7 +49,7 @@ describe("session store", () => {
   });
 
   it("ignores a persisted session whose artifact boundary was tampered with", async () => {
-    const root = await mkdtemp(join(tmpdir(), "agentlens-store-boundary-"));
+    const root = await mkdtemp(join(tmpdir(), "agentrender-store-boundary-"));
     const artifactPath = join(root, "review.html");
     await writeFile(artifactPath, "<p>Review</p>");
     const store = new SessionStore(root);
@@ -60,7 +60,7 @@ describe("session store", () => {
       artifactRelativePath: "review.html",
       contentHash: contentHash("<p>Review</p>"),
     });
-    const statePath = join(root, ".agentlens", "sessions", `${session.id}.json`);
+    const statePath = join(root, ".agentrender", "sessions", `${session.id}.json`);
     const persisted = JSON.parse(await readFile(statePath, "utf8")) as { rootPath: string };
     persisted.rootPath = "/tmp/not-the-project";
     await writeFile(statePath, `${JSON.stringify(persisted)}\n`);

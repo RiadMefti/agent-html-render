@@ -3,6 +3,7 @@ export const PROTOCOL_VERSION = "1" as const;
 export type SessionStatus = "open" | "ended";
 export type FeedbackStatus = "feedback" | "ended";
 export type AnchorResolution = "attached" | "unresolved";
+export type StableAttribute = "data-agentrender-id" | "data-agentlens-id" | "id";
 
 export interface TextQuote {
   exact: string;
@@ -23,7 +24,7 @@ export interface TargetDescriptor {
   role?: string;
   label?: string;
   stableId?: string;
-  stableAttribute?: "data-agentlens-id" | "id";
+  stableAttribute?: StableAttribute;
   cssPath: string;
   domPath: number[];
   text: string;
@@ -105,15 +106,15 @@ export interface BridgeConfiguration {
 }
 
 export type BridgeToParentMessage =
-  | { source: "agentlens-bridge"; token: string; type: "ready" }
+  | { source: "agentrender-bridge"; token: string; type: "ready" }
   | {
-      source: "agentlens-bridge";
+      source: "agentrender-bridge";
       token: string;
       type: "target-selected";
       target: TargetDescriptor;
     }
   | {
-      source: "agentlens-bridge";
+      source: "agentrender-bridge";
       token: string;
       type: "anchor-resolutions";
       resolutions: Array<{ id: string; resolution: AnchorResolution }>;
@@ -121,19 +122,19 @@ export type BridgeToParentMessage =
 
 export type ParentToBridgeMessage =
   | {
-      source: "agentlens-shell";
+      source: "agentrender-shell";
       token: string;
       type: "set-selection-mode";
       enabled: boolean;
     }
   | {
-      source: "agentlens-shell";
+      source: "agentrender-shell";
       token: string;
       type: "show-annotations";
       annotations: DraftAnnotation[];
     }
   | {
-      source: "agentlens-shell";
+      source: "agentrender-shell";
       token: string;
       type: "clear-selection";
     };

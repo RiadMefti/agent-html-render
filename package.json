@@ -1,10 +1,10 @@
 {
-  "name": "@rimef/agentlens",
-  "version": "0.1.2",
-  "description": "Local, vendor-neutral HTML review loops for coding agents.",
+  "name": "agentrender",
+  "version": "0.2.0",
+  "description": "Local visual review loops for coding agents using ordinary HTML.",
   "type": "module",
   "bin": {
-    "agentlens": "dist/node/cli.js"
+    "agentrender": "dist/node/cli.js"
   },
   "files": [
     "dist",
@@ -22,8 +22,9 @@
     "dev:cli": "tsx src/node/cli.ts",
     "test": "vitest run --exclude tests/e2e/**",
     "test:e2e": "npm run build && playwright test",
-    "test:all": "npm run typecheck && npm test && npm run test:e2e && npm run smoke:agents",
+    "test:all": "npm run typecheck && npm test && npm run test:e2e && npm run smoke:agents:strict",
     "smoke:agents": "node scripts/smoke-agents.mjs",
+    "smoke:agents:strict": "node scripts/smoke-agents.mjs --strict",
     "prepack": "npm run build"
   },
   "engines": {
@@ -34,6 +35,8 @@
     "annotation",
     "html",
     "review",
+    "visual-feedback",
+    "html-artifacts",
     "local-first",
     "human-in-the-loop",
     "developer-tools",
@@ -45,12 +48,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/RiadMefti/agentlens.git"
+    "url": "git+https://github.com/RiadMefti/agentrender.git"
   },
   "bugs": {
-    "url": "https://github.com/RiadMefti/agentlens/issues"
+    "url": "https://github.com/RiadMefti/agentrender/issues"
   },
-  "homepage": "https://github.com/RiadMefti/agentlens#readme",
+  "homepage": "https://github.com/RiadMefti/agentrender#readme",
   "publishConfig": {
     "access": "public",
     "provenance": true
