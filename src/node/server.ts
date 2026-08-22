@@ -1,8 +1,7 @@
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import { readFile, realpath } from "node:fs/promises";
 import { createServer, type Server as HttpServer } from "node:http";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 import chokidar, { type FSWatcher } from "chokidar";
 import express, { type NextFunction, type Request, type Response } from "express";
 import {
@@ -12,12 +11,15 @@ import {
   type ReviewEvent,
 } from "../shared/protocol.js";
 import { readArtifact, renderSandboxedArtifact, resolveArtifact } from "./artifact.js";
+import {
+  createRuntimeBuildIdentity,
+  DEFAULT_BRIDGE_PATH,
+  DEFAULT_UI_DIRECTORY,
+  readUiRuntimeSnapshot,
+} from "./build.js";
 import { SessionStore, type SessionRecord } from "./store.js";
 import { parseFeedbackAckBody, parseReviewDraft, parseSendBody } from "./validation.js";
 
-const MODULE_DIRECTORY = dirname(fileURLToPath(import.meta.url));
-const DEFAULT_UI_DIRECTORY = resolve(MODULE_DIRECTORY, "../ui");
-const DEFAULT_BRIDGE_PATH = resolve(MODULE_DIRECTORY, "../bridge/bridge.js");
 const LONG_POLL_MILLISECONDS = 25_000;
 const SSE_HEARTBEAT_MILLISECONDS = 15_000;
 
@@ -43,6 +45,8 @@ export interface RunningServer {
   port: number;
   origin: string;
   token: string;
+  packageVersion: string;
+  buildId: string;
   store: SessionStore;
   close: () => Promise<void>;
 }
@@ -85,9 +89,12 @@ export async function startServer(options: StartServerOptions): Promise<RunningS
   const rootPath = await realpath(resolve(options.rootPath));
   const token = options.token ?? randomBytes(24).toString("base64url");
   const uiDirectory = options.uiDirectory ?? DEFAULT_UI_DIRECTORY;
-  const bridgeSource = options.bridgeSource ?? (await readFile(DEFAULT_BRIDGE_PATH, "utf8"));
-  const uiIndexPath = join(uiDirectory, "index.html");
-  const uiIndexHtml = await readFile(uiIndexPath, "utf8");
+  const [uiSnapshot, bridgeSource] = await Promise.all([
+    readUiRuntimeSnapshot(uiDirectory),
+    options.bridgeSource === undefined ? readFile(DEFAULT_BRIDGE_PATH, "utf8") : options.bridgeSource,
+  ]);
+  const uiIndexHtml = uiSnapshot.indexHtml;
+  const runtimeBuild = createRuntimeBuildIdentity(uiIndexHtml, bridgeSource, uiSnapshot.assets);
 
   const store = new SessionStore(rootPath);
   await store.initialize();
@@ -152,6 +159,8 @@ export async function startServer(options: StartServerOptions): Promise<RunningS
       name: "agent-html-render",
       protocolVersion: "1",
       capabilities: [EXPLICIT_FEEDBACK_ACK_CAPABILITY],
+      packageVersion: runtimeBuild.packageVersion,
+      buildId: runtimeBuild.buildId,
       rootPath,
       pid: process.pid,
     });
@@ -264,14 +273,16 @@ export async function startServer(options: StartServerOptions): Promise<RunningS
     setTimeout(() => void close(), 20).unref();
   });
 
-  app.use(
-    "/assets",
-    express.static(join(uiDirectory, "assets"), {
-      immutable: true,
-      maxAge: "1y",
-      fallthrough: false,
-    }),
-  );
+  app.use("/assets", (request, response) => {
+    const relativePath = request.path.replace(/^\/+/, "");
+    const asset = uiSnapshot.assets.get(relativePath);
+    if (!asset) {
+      response.status(404).json({ error: "Unknown review-shell asset." });
+      return;
+    }
+    response.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    response.type(relativePath).send(asset);
+  });
 
   app.get("/session/:id", (request, response) => {
     const session = requireReviewSession(request, response);
@@ -389,5 +400,14 @@ export async function startServer(options: StartServerOptions): Promise<RunningS
     });
   };
 
-  return { rootPath, port: address.port, origin, token, store, close };
+  return {
+    rootPath,
+    port: address.port,
+    origin,
+    token,
+    packageVersion: runtimeBuild.packageVersion,
+    buildId: runtimeBuild.buildId,
+    store,
+    close,
+  };
 }

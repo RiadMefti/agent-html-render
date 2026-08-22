@@ -9,6 +9,7 @@ import {
   FEEDBACK_ACK_HEADER,
   type FeedbackDelivery,
 } from "../shared/protocol.js";
+import { PACKAGE_VERSION } from "../shared/version.js";
 import {
   currentDaemon,
   daemonRequest,
@@ -19,7 +20,6 @@ import {
 import type { AgentSessionSummary } from "./server.js";
 import { installProjectSkill } from "./install.js";
 
-const VERSION = "0.3.0";
 const MODULE_DIRECTORY = dirname(fileURLToPath(import.meta.url));
 const BUNDLED_SKILL_DIRECTORY = resolve(MODULE_DIRECTORY, "../../skills/agent-html-render");
 
@@ -81,7 +81,7 @@ function assertOptions(
 }
 
 function usage(): string {
-  return `Agent HTML Render ${VERSION}
+  return `Agent HTML Render ${PACKAGE_VERSION}
 
 Usage:
   agent-html-render review <file.html> [--root <directory>] [--no-open] [--format json|markdown]
@@ -185,6 +185,8 @@ async function status(options: ParsedOptions): Promise<void> {
   const daemon = {
     running: true,
     protocolVersion: metadata.protocolVersion,
+    packageVersion: metadata.packageVersion,
+    buildId: metadata.buildId,
     pid: metadata.pid,
     rootPath: metadata.rootPath,
     port: metadata.port,
@@ -227,7 +229,7 @@ async function main(): Promise<void> {
     return;
   }
   if (command === "--version" || command === "-v") {
-    writeStdout(`${VERSION}\n`);
+    writeStdout(`${PACKAGE_VERSION}\n`);
     return;
   }
   const options = parseOptions(rest);

@@ -2,9 +2,11 @@
 
 All notable changes to Agent HTML Render are documented here.
 
-## Unreleased
+## 0.3.1 — 2026-08-22
 
 - Let agents add diagrams when they materially improve understanding, with inline SVG suggested as an annotatable option rather than a required framework.
+- Snapshot review-shell assets in daemon memory and replace stale daemons whenever their package version, UI shell, or artifact bridge differs from the invoking CLI, so npm cache refreshes cannot break active or future reviews.
+- Show a lightweight loading fallback instead of a blank dark page if the review application cannot mount.
 
 ## 0.3.0 — 2026-08-22
 

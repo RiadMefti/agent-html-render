@@ -2,6 +2,8 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, expect, test } from "vitest";
+import { createRuntimeBuildIdentity } from "../../src/node/build.js";
+import { inspectDaemonHealth, type DaemonMetadata } from "../../src/node/daemon.js";
 import { startServer, type RunningServer } from "../../src/node/server.js";
 import { EXPLICIT_FEEDBACK_ACK_CAPABILITY, FEEDBACK_ACK_HEADER } from "../../src/shared/protocol.js";
 
@@ -49,6 +51,77 @@ test("serves the review shell when npm runs the package from a hidden cache dire
   expect(await reviewResponse.text()).toContain("<title>Review shell</title>");
 });
 
+test("marks a daemon stale when npx replaces its cached UI assets", async () => {
+  const temporaryDirectory = await mkdtemp(join(tmpdir(), "agent-html-render-cache-refresh-"));
+  temporaryDirectories.push(temporaryDirectory);
+
+  const rootPath = join(temporaryDirectory, "project");
+  const uiDirectory = join(temporaryDirectory, ".npm", "_npx", "package", "dist", "ui");
+  const assetsDirectory = join(uiDirectory, "assets");
+  const oldIndex = '<!doctype html><script type="module" src="/assets/index-old.js"></script>';
+  const newIndex = '<!doctype html><script type="module" src="/assets/index-new.js"></script>';
+  const bridgeSource = "window.__agentHtmlRenderBridge = true;";
+  await mkdir(rootPath, { recursive: true });
+  await mkdir(assetsDirectory, { recursive: true });
+  await writeFile(join(rootPath, "plan.html"), "<!doctype html><title>Plan</title>");
+  await writeFile(join(uiDirectory, "index.html"), oldIndex);
+  await writeFile(join(assetsDirectory, "index-old.js"), "window.oldShell = true;");
+
+  const server = await startServer({
+    rootPath,
+    token: "cache-refresh-token",
+    uiDirectory,
+    bridgeSource,
+  });
+  runningServers.push(server);
+
+  const createResponse = await fetch(`${server.origin}/api/agent/sessions`, {
+    method: "POST",
+    headers: {
+      authorization: "Bearer cache-refresh-token",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ artifactPath: "plan.html" }),
+  });
+  const created = (await createResponse.json()) as { session: { reviewUrl: string } };
+
+  await writeFile(join(uiDirectory, "index.html"), newIndex);
+  await writeFile(join(assetsDirectory, "index-new.js"), "window.newShell = true;");
+  await rm(join(assetsDirectory, "index-old.js"));
+
+  const stalePage = await fetch(created.session.reviewUrl);
+  expect(await stalePage.text()).toContain("index-old.js");
+  const snapshottedAsset = await fetch(`${server.origin}/assets/index-old.js`);
+  expect(snapshottedAsset.status).toBe(200);
+  expect(await snapshottedAsset.text()).toContain("oldShell");
+
+  const healthResponse = await fetch(`${server.origin}/api/health`, {
+    headers: { authorization: "Bearer cache-refresh-token" },
+  });
+  const health = await healthResponse.json();
+  const expectedBuild = createRuntimeBuildIdentity(
+    newIndex,
+    bridgeSource,
+    new Map([["index-new.js", Buffer.from("window.newShell = true;")]]),
+  );
+  const metadata: DaemonMetadata = {
+    protocolVersion: "1",
+    packageVersion: server.packageVersion,
+    buildId: server.buildId,
+    pid: process.pid,
+    rootPath: server.rootPath,
+    port: server.port,
+    token: "cache-refresh-token",
+    startedAt: "2026-08-22T00:00:00.000Z",
+  };
+
+  expect(server.buildId).not.toBe(expectedBuild.buildId);
+  expect(inspectDaemonHealth(metadata, health, expectedBuild)).toEqual({
+    healthy: true,
+    compatible: false,
+  });
+});
+
 test("keeps feedback pending until acknowledgement and resumes an ended session in order", async () => {
   const temporaryDirectory = await mkdtemp(join(tmpdir(), "agent-html-render-delivery-"));
   temporaryDirectories.push(temporaryDirectory);
@@ -73,6 +146,8 @@ test("keeps feedback pending until acknowledgement and resumes an ended session 
   expect(healthResponse.status).toBe(200);
   expect((await healthResponse.json()) as { capabilities: string[] }).toMatchObject({
     capabilities: [EXPLICIT_FEEDBACK_ACK_CAPABILITY],
+    packageVersion: server.packageVersion,
+    buildId: server.buildId,
   });
   const agentHeaders = {
     authorization: "Bearer delivery-test-token",

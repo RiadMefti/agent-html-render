@@ -4,10 +4,16 @@ import { mkdir, readFile, realpath, rename, unlink, writeFile } from "node:fs/pr
 import { existsSync, readFileSync, unlinkSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { EXPLICIT_FEEDBACK_ACK_CAPABILITY } from "../shared/protocol.js";
+import {
+  readCurrentRuntimeBuildIdentity,
+  type RuntimeBuildIdentity,
+} from "./build.js";
 import { startServer, type RunningServer } from "./server.js";
 
 export interface DaemonMetadata {
   protocolVersion: "1";
+  packageVersion?: string;
+  buildId?: string;
   pid: number;
   rootPath: string;
   port: number;
@@ -34,7 +40,9 @@ async function readMetadata(rootPath: string): Promise<DaemonMetadata | undefine
       typeof parsed.rootPath === "string" &&
       typeof parsed.port === "number" &&
       typeof parsed.token === "string" &&
-      typeof parsed.startedAt === "string"
+      typeof parsed.startedAt === "string" &&
+      (parsed.packageVersion === undefined || typeof parsed.packageVersion === "string") &&
+      (parsed.buildId === undefined || typeof parsed.buildId === "string")
     ) {
       return parsed as DaemonMetadata;
     }
@@ -52,25 +60,44 @@ async function writeMetadata(metadata: DaemonMetadata): Promise<void> {
   await rename(temporary, target);
 }
 
-interface DaemonInspection {
+export interface DaemonInspection {
   healthy: boolean;
   compatible: boolean;
 }
 
-async function inspectDaemon(metadata: DaemonMetadata): Promise<DaemonInspection> {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+export function inspectDaemonHealth(
+  metadata: DaemonMetadata,
+  body: unknown,
+  expectedBuild?: RuntimeBuildIdentity,
+): DaemonInspection {
+  if (!isRecord(body)) return { healthy: false, compatible: false };
+  const healthy = body.rootPath === metadata.rootPath && body.pid === metadata.pid;
+  const compatible =
+    healthy &&
+    expectedBuild !== undefined &&
+    body.protocolVersion === metadata.protocolVersion &&
+    Array.isArray(body.capabilities) &&
+    body.capabilities.includes(EXPLICIT_FEEDBACK_ACK_CAPABILITY) &&
+    body.packageVersion === expectedBuild.packageVersion &&
+    body.buildId === expectedBuild.buildId;
+  return { healthy, compatible };
+}
+
+async function inspectDaemon(
+  metadata: DaemonMetadata,
+  expectedBuild?: RuntimeBuildIdentity,
+): Promise<DaemonInspection> {
   try {
     const response = await fetch(`http://127.0.0.1:${metadata.port}/api/health`, {
       headers: { authorization: `Bearer ${metadata.token}` },
       signal: AbortSignal.timeout(1_000),
     });
     if (!response.ok) return { healthy: false, compatible: false };
-    const body = (await response.json()) as { rootPath?: string; pid?: number; capabilities?: unknown };
-    const healthy = body.rootPath === metadata.rootPath && body.pid === metadata.pid;
-    const compatible =
-      healthy &&
-      Array.isArray(body.capabilities) &&
-      body.capabilities.includes(EXPLICIT_FEEDBACK_ACK_CAPABILITY);
-    return { healthy, compatible };
+    return inspectDaemonHealth(metadata, await response.json(), expectedBuild);
   } catch {
     return { healthy: false, compatible: false };
   }
@@ -82,8 +109,9 @@ function delay(milliseconds: number): Promise<void> {
 
 export async function ensureDaemon(rootInput: string): Promise<DaemonMetadata> {
   const rootPath = await realpath(resolve(rootInput));
+  const expectedBuild = await readCurrentRuntimeBuildIdentity();
   const existing = await readMetadata(rootPath);
-  const inspection = existing ? await inspectDaemon(existing) : undefined;
+  const inspection = existing ? await inspectDaemon(existing, expectedBuild) : undefined;
   if (existing && inspection?.compatible) return existing;
   if (existing && inspection?.healthy) {
     await daemonRequest(existing, "/api/agent/stop", { method: "POST" }).catch(() => undefined);
@@ -108,7 +136,7 @@ export async function ensureDaemon(rootInput: string): Promise<DaemonMetadata> {
   const deadline = Date.now() + START_TIMEOUT_MILLISECONDS;
   while (Date.now() < deadline) {
     const metadata = await readMetadata(rootPath);
-    if (metadata && (await inspectDaemon(metadata)).compatible) return metadata;
+    if (metadata && (await inspectDaemon(metadata, expectedBuild)).compatible) return metadata;
     await delay(100);
   }
   throw new Error("Agent HTML Render daemon did not become ready within 12 seconds.");
@@ -120,6 +148,8 @@ export async function runDaemon(rootInput: string): Promise<RunningServer> {
   const server = await startServer({ rootPath, token });
   const metadata: DaemonMetadata = {
     protocolVersion: "1",
+    packageVersion: server.packageVersion,
+    buildId: server.buildId,
     pid: process.pid,
     rootPath,
     port: server.port,
