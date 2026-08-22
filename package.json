@@ -1,6 +1,6 @@
 {
-  "name": "@riadmefti/agentlens",
-  "version": "0.1.1",
+  "name": "@rimef/agentlens",
+  "version": "0.1.2",
   "description": "Local, vendor-neutral HTML review loops for coding agents.",
   "type": "module",
   "bin": {

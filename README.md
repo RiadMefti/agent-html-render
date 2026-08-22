@@ -16,26 +16,17 @@ It works with Codex, Claude Code, OpenCode, and any other agent that can run a C
 - **Local first.** The server binds to loopback, session state stays in the project, and artifacts run in a sandboxed iframe.
 - **Vendor neutral.** One review command and one portable skill work across coding-agent hosts.
 
-## Install
+## Use in a project
 
 AgentLens requires Node.js 20.19 or newer.
 
 ```bash
-npm install --global https://github.com/RiadMefti/agentlens/releases/latest/download/agentlens.tgz
-agentlens --help
-```
-
-AgentLens is currently distributed as a prebuilt GitHub release. The unscoped `agentlens` package on npm is unrelated to this project.
-
-## Set up an agent
-
-From the project you want to review:
-
-```bash
-agentlens install-skill
+npx --yes --prefer-online @rimef/agentlens@latest install-skill
 ```
 
 This installs the canonical skill at `.agents/skills/agentlens` for Codex and OpenCode, then links `.claude/skills/agentlens` to it for Claude Code. Existing, different skills are never overwritten.
+
+The skill invokes `@rimef/agentlens@latest` through `npx`, so there is no global installation to maintain. npm checks for the current release and reuses its local cache when possible. The unscoped `agentlens` package on npm is unrelated to this project.
 
 Now ask your agent for a reviewable artifact:
 
@@ -69,7 +60,7 @@ Use **Send to Agent** for another revision or **Send & End** to close the sessio
 Any self-contained HTML file inside the project can be reviewed:
 
 ```bash
-agentlens review examples/plan.html
+npx --yes --prefer-online @rimef/agentlens@latest review examples/plan.html
 ```
 
 | Command | Purpose |

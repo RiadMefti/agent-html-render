@@ -2,6 +2,11 @@
 
 All notable changes to AgentLens are documented here.
 
+## 0.1.2 — 2026-08-22
+
+- Published the CLI as `@rimef/agentlens`.
+- Switched project usage and the bundled skill to `npx @latest`, removing the global-installation requirement.
+
 ## 0.1.1 — 2026-08-22
 
 - Fixed global installation by shipping a prebuilt release archive instead of compiling a Git dependency during installation.

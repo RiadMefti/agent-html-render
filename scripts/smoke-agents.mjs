@@ -43,6 +43,9 @@ async function validatePortableSkill() {
   if (!/^name:\s*agentlens\s*$/mu.test(frontmatter)) throw new Error("Skill name is missing or invalid.");
   if (!/^description:\s*\S.+$/mu.test(frontmatter)) throw new Error("Skill description is missing.");
   if (!skill.includes("references/theme.md")) throw new Error("The theme reference is not discoverable.");
+  if (!skill.includes("npx --yes --prefer-online @rimef/agentlens@latest review")) {
+    throw new Error("The portable skill does not invoke the current npm package through npx.");
+  }
   if (!theme.includes("--background: #fafafa")) throw new Error("The shared theme tokens are incomplete.");
 }
 
