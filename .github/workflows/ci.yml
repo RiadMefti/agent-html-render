@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node: [20.19.0, 22.x]
+        node: [24.15.0, 26.x]
 
     steps:
       - name: Check out repository
@@ -45,13 +45,13 @@ jobs:
         run: npm run build
 
       - name: Install Chromium
-        if: matrix.node == '22.x'
+        if: matrix.node == '26.x'
         run: npx playwright install --with-deps chromium
 
       - name: Run production browser test
-        if: matrix.node == '22.x'
+        if: matrix.node == '26.x'
         run: npm run test:e2e
 
       - name: Verify package contents
-        if: matrix.node == '22.x'
+        if: matrix.node == '26.x'
         run: npm pack --dry-run

@@ -4,7 +4,7 @@ Keep changes local-first, vendor-neutral, and small enough to review.
 
 ## Development setup
 
-Agent HTML Render requires Node.js 20.19 or newer.
+Agent HTML Render requires Node.js 24.15 or newer.
 
 ```bash
 npm ci
