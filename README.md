@@ -21,11 +21,11 @@ It works with Codex, Claude Code, OpenCode, and any other agent that can run a C
 AgentLens requires Node.js 20.19 or newer.
 
 ```bash
-npm install --global github:RiadMefti/agentlens
+npm install --global https://github.com/RiadMefti/agentlens/releases/latest/download/agentlens.tgz
 agentlens --help
 ```
 
-AgentLens is currently distributed from GitHub. The unscoped `agentlens` package on npm is unrelated to this project.
+AgentLens is currently distributed as a prebuilt GitHub release. The unscoped `agentlens` package on npm is unrelated to this project.
 
 ## Set up an agent
 

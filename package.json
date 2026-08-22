@@ -1,6 +1,6 @@
 {
   "name": "@riadmefti/agentlens",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Local, vendor-neutral HTML review loops for coding agents.",
   "type": "module",
   "bin": {
@@ -24,7 +24,7 @@
     "test:e2e": "npm run build && playwright test",
     "test:all": "npm run typecheck && npm test && npm run test:e2e && npm run smoke:agents",
     "smoke:agents": "node scripts/smoke-agents.mjs",
-    "prepare": "npm run build"
+    "prepack": "npm run build"
   },
   "engines": {
     "node": ">=20.19.0"

@@ -2,6 +2,10 @@
 
 All notable changes to AgentLens are documented here.
 
+## 0.1.1 — 2026-08-22
+
+- Fixed global installation by shipping a prebuilt release archive instead of compiling a Git dependency during installation.
+
 ## 0.1.0 — 2026-08-22
 
 - Added the local HTML review daemon and `agentlens review` loop.
