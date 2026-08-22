@@ -1,6 +1,6 @@
 {
   "name": "agent-html-render",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Review agent-written HTML locally and send element-level feedback to the agent.",
   "type": "module",
   "bin": {
@@ -28,7 +28,7 @@
     "prepack": "npm run build"
   },
   "engines": {
-    "node": ">=20.19.0"
+    "node": "^24.15.0 || >=26.0.0"
   },
   "keywords": [
     "agents",
@@ -72,7 +72,7 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "@vitejs/plugin-react": "^6.1.0",
-    "jsdom": "^29.0.0",
+    "jsdom": "^30.0.1",
     "tsx": "^4.23.12",
     "typescript": "^7.0.2",
     "vite": "^8.2.2",

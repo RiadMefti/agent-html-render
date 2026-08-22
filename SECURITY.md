@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-Agent HTML Render is currently in its `0.3.x` development line. Security fixes go to the latest release only.
+Agent HTML Render is currently in its `0.4.x` development line. Security fixes go to the latest release only.
 
 ## Reporting a vulnerability
 

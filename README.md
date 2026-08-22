@@ -10,7 +10,7 @@ It works with Codex, Claude Code, OpenCode, and any other agent that can run a C
 
 ## Install the project skill
 
-Agent HTML Render requires Node.js 20.19 or newer. Run this once in each repository:
+Agent HTML Render requires Node.js 24.15 or newer. Run this once in each repository:
 
 ```bash
 npx --yes --prefer-online agent-html-render@latest install-skill
@@ -104,7 +104,7 @@ Reviewer instructions and artifact excerpts stay separate. The output labels art
 - Runtime messages and feedback payloads are validated and bounded.
 - Session files are written under `.agent-html-render/` with private permissions and are ignored by Git.
 
-Agent HTML Render v0.3 supports one reviewer on the local machine. Accounts, cloud sync, hosted sharing, and multiplayer review are out of scope.
+Agent HTML Render v0.4 supports one reviewer on the local machine. Accounts, cloud sync, hosted sharing, and multiplayer review are out of scope.
 
 ## Migrating from AgentLens or the AgentRender preview
 

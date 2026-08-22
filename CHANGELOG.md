@@ -2,10 +2,12 @@
 
 All notable changes to Agent HTML Render are documented here.
 
-## Unreleased
+## 0.4.0 — 2026-08-22
 
 - Tightened the README, bundled skill, contribution guide, security policy, issue templates, package summary, and review status copy.
 - Updated stale `0.2.x` references.
+- Raised the minimum runtime to Node.js 24.15 LTS and moved CI coverage to Node 24 and Node 26.
+- Updated jsdom from 29.1.1 to 30.0.1 for the test suite.
 
 ## 0.3.1 — 2026-08-22
 

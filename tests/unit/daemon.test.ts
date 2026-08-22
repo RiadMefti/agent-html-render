@@ -2,10 +2,11 @@ import { expect, test } from "vitest";
 import { inspectDaemonHealth, type DaemonMetadata } from "../../src/node/daemon.js";
 import type { RuntimeBuildIdentity } from "../../src/node/build.js";
 import { EXPLICIT_FEEDBACK_ACK_CAPABILITY } from "../../src/shared/protocol.js";
+import { PACKAGE_VERSION } from "../../src/shared/version.js";
 
 const metadata: DaemonMetadata = {
   protocolVersion: "1",
-  packageVersion: "0.3.1",
+  packageVersion: PACKAGE_VERSION,
   buildId: "sha256:current",
   pid: 4321,
   rootPath: "/tmp/example-project",
@@ -15,7 +16,7 @@ const metadata: DaemonMetadata = {
 };
 
 const expectedBuild: RuntimeBuildIdentity = {
-  packageVersion: "0.3.1",
+  packageVersion: PACKAGE_VERSION,
   buildId: "sha256:current",
 };
 
@@ -35,7 +36,7 @@ test("accepts only the exact running package build", () => {
   });
 
   expect(
-    inspectDaemonHealth(metadata, { ...compatibleHealth, packageVersion: "0.3.0" }, expectedBuild),
+    inspectDaemonHealth(metadata, { ...compatibleHealth, packageVersion: "0.3.1" }, expectedBuild),
   ).toEqual({ healthy: true, compatible: false });
 
   expect(
