@@ -21,7 +21,6 @@ interface ReviewActivity {
   kind: ActivityKind;
   label: string;
   detail: string;
-  meta: string;
 }
 
 function feedbackReceipt(delivery: FeedbackDelivery): FeedbackReceipt {
@@ -31,12 +30,6 @@ function feedbackReceipt(delivery: FeedbackDelivery): FeedbackReceipt {
     sentAt: delivery.feedback.sentAt,
     revision: delivery.feedback.session.revision,
   };
-}
-
-function sentTime(value: string): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 }
 
 function reviewActivity(
@@ -50,15 +43,13 @@ function reviewActivity(
       kind: "ended",
       label: "Review complete",
       detail: "Final feedback was sent. This session will not reopen automatically.",
-      meta: `r${session.revision}`,
     };
   }
   if (busy) {
     return {
       kind: "sending",
       label: "Sending feedback",
-      detail: "Agent HTML Render is saving and delivering your notes. They will stay in the drawer until this succeeds.",
-      meta: `r${session.revision}`,
+      detail: "Agent HTML Render is saving and delivering your notes. They will stay in the review dialog until this succeeds.",
     };
   }
   if (sendError) {
@@ -66,7 +57,6 @@ function reviewActivity(
       kind: "failed",
       label: "Send failed",
       detail: `${sendError} Your notes are still here; retry when ready.`,
-      meta: `r${session.revision}`,
     };
   }
   if (!connected) {
@@ -74,7 +64,6 @@ function reviewActivity(
       kind: "offline",
       label: "Reconnecting",
       detail: "Live revision updates are paused. Agent HTML Render is retrying the local connection.",
-      meta: `r${session.revision}`,
     };
   }
 
@@ -83,8 +72,7 @@ function reviewActivity(
     return {
       kind: "ready",
       label: "Ready to review",
-      detail: "Select an element or text, add a note, then send the batch to the agent.",
-      meta: `r${session.revision}`,
+      detail: "Interact with the artifact, or choose Annotate to leave precise feedback.",
     };
   }
   if (session.revision > latest.revision) {
@@ -92,7 +80,6 @@ function reviewActivity(
       kind: "updated",
       label: `Revision ${session.revision} ready`,
       detail: `The artifact changed after feedback ${latest.sequence}. Review the update or send another note.`,
-      meta: `r${session.revision}`,
     };
   }
   if (session.deliveredFeedbackSequence >= latest.sequence) {
@@ -100,14 +87,12 @@ function reviewActivity(
       kind: "working",
       label: "Agent received feedback",
       detail: `Feedback ${latest.sequence} is with the agent. Waiting for revision ${latest.revision + 1}; this page will update automatically.`,
-      meta: sentTime(latest.sentAt),
     };
   }
   return {
     kind: "queued",
     label: "Feedback queued",
     detail: `Feedback ${latest.sequence} is saved. Waiting for an agent review command to pick it up.`,
-    meta: sentTime(latest.sentAt),
   };
 }
 
@@ -158,8 +143,8 @@ export function App(): React.JSX.Element {
   const [draft, setDraft] = useState<ReviewDraft>(EMPTY_DRAFT);
   const [selectedTarget, setSelectedTarget] = useState<TargetDescriptor | null>(null);
   const [comment, setComment] = useState("");
-  const [selectionMode, setSelectionMode] = useState(true);
-  const [panelOpen, setPanelOpen] = useState(false);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
   const [connected, setConnected] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -292,7 +277,6 @@ export function App(): React.JSX.Element {
       } else if (message.type === "target-selected") {
         setSelectedTarget(message.target);
         setComment("");
-        setPanelOpen(true);
       } else if (message.type === "anchor-resolutions") {
         setDraft((current) => ({
           ...current,
@@ -310,6 +294,24 @@ export function App(): React.JSX.Element {
   useEffect(() => {
     sendToBridge({ type: "set-selection-mode", enabled: selectionMode });
   }, [selectionMode, sendToBridge]);
+
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent): void => {
+      if (event.key !== "Escape") return;
+      if (reviewOpen) {
+        setReviewOpen(false);
+        return;
+      }
+      if (selectionMode || selectedTarget) {
+        setSelectionMode(false);
+        setSelectedTarget(null);
+        setComment("");
+        sendToBridge({ type: "clear-selection" });
+      }
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [reviewOpen, selectedTarget, selectionMode, sendToBridge]);
 
   useEffect(() => {
     if (!session || session.status === "ended") return;
@@ -345,14 +347,26 @@ export function App(): React.JSX.Element {
     updateDraft(nextDraft);
     setSelectedTarget(null);
     setComment("");
+    setSelectionMode(false);
     sendToBridge({ type: "clear-selection" });
-    setNotice("Annotation added to the queue.");
+    setNotice("Annotation queued.");
   };
 
   const clearSelection = (): void => {
     setSelectedTarget(null);
     setComment("");
+    setSelectionMode(false);
     sendToBridge({ type: "clear-selection" });
+  };
+
+  const toggleSelectionMode = (): void => {
+    if (selectionMode || selectedTarget) {
+      clearSelection();
+      return;
+    }
+    setReviewOpen(false);
+    setSelectionMode(true);
+    setNotice(null);
   };
 
   const removeAnnotation = (id: string): void => {
@@ -378,6 +392,8 @@ export function App(): React.JSX.Element {
       setDraft(EMPTY_DRAFT);
       setSelectedTarget(null);
       setComment("");
+      setSelectionMode(false);
+      setReviewOpen(false);
       showDraftTargets(EMPTY_DRAFT);
       const receipt = feedbackReceipt(delivery);
       setSession((current) =>
@@ -434,39 +450,6 @@ export function App(): React.JSX.Element {
             {session.artifactRelativePath}
           </span>
         </div>
-        <nav className="review-nav" aria-label="Review controls">
-          <span className="session-status">
-            {connected ? "Live" : "Reconnecting"} · <span data-testid="revision">r{session.revision}</span>
-          </span>
-          <button
-            className={`nav-action ${selectionMode ? "active" : ""}`}
-            type="button"
-            disabled={ended}
-            onClick={() => setSelectionMode(true)}
-          >
-            Annotate
-          </button>
-          <button
-            className={`nav-action ${selectionMode ? "" : "active"}`}
-            type="button"
-            disabled={ended}
-            onClick={() => setSelectionMode(false)}
-          >
-            Interact
-          </button>
-          <button
-            className={`nav-action ${panelOpen ? "active" : ""}`}
-            type="button"
-            aria-expanded={panelOpen}
-            aria-controls="review-panel"
-            onClick={() => setPanelOpen((current) => !current)}
-          >
-            Review{draft.annotations.length > 0 ? ` ${draft.annotations.length}` : ""}
-          </button>
-        </nav>
-      </header>
-
-      <section className="workspace">
         <div
           className="review-activity"
           data-state={activity.kind}
@@ -476,16 +459,43 @@ export function App(): React.JSX.Element {
           aria-atomic="true"
         >
           <strong>{activity.label}</strong>
-          <span>{activity.detail}</span>
-          <small>{activity.meta}</small>
+          <span title={activity.detail}>{activity.detail}</span>
         </div>
+        <nav className="review-nav" aria-label="Review controls">
+          <span className="session-status">
+            <span data-testid="revision">r{session.revision}</span> · {connected ? "Live" : "Reconnecting"}
+          </span>
+          <button
+            className={`nav-action ${selectionMode ? "active" : ""}`}
+            type="button"
+            disabled={ended}
+            aria-pressed={selectionMode}
+            onClick={toggleSelectionMode}
+          >
+            {selectionMode ? "Cancel" : "Annotate"}
+          </button>
+          <button
+            className={`nav-action ${reviewOpen ? "active" : ""}`}
+            type="button"
+            aria-haspopup="dialog"
+            aria-expanded={reviewOpen}
+            aria-controls="review-dialog"
+            aria-label={draft.annotations.length > 0 ? `Review (${draft.annotations.length})` : "Review"}
+            onClick={() => setReviewOpen(true)}
+          >
+            Review{draft.annotations.length > 0 ? <span className="review-count">{draft.annotations.length}</span> : null}
+          </button>
+        </nav>
+      </header>
+
+      <section className="workspace">
         <div className="artifact-stage">
-          <div className="stage-heading">
-            <span>{session.artifactName}</span>
-            <span>
-            {selectionMode ? "Click an element or select text to annotate" : "Interaction mode: artifact controls are active"}
-            </span>
-          </div>
+          {selectionMode && !selectedTarget && !ended ? (
+            <div className="selection-hint" role="status">
+              <span>Select an element or exact text to annotate</span>
+              <small>Esc to cancel</small>
+            </div>
+          ) : null}
           <iframe
             ref={iframeRef}
             key={session.revision}
@@ -510,135 +520,148 @@ export function App(): React.JSX.Element {
           ) : null}
         </div>
 
-        <aside id="review-panel" className={`review-panel ${panelOpen ? "open" : ""}`} aria-label="Review feedback">
-          <div className="panel-heading">
-            <div>
-              <h1>Review</h1>
-              <p>{draft.annotations.length} annotation{draft.annotations.length === 1 ? "" : "s"}</p>
-            </div>
-            <button className="quiet-action" type="button" onClick={() => setPanelOpen(false)}>
-              Close
-            </button>
-          </div>
-
-          {selectedTarget ? (
-            <section className="selection-editor" data-testid="selection-card">
-              <span className="section-label">Selection</span>
-              <div className="selection-title">
+        {selectedTarget && !ended ? (
+          <section
+            className="annotation-composer"
+            data-testid="selection-card"
+            role="dialog"
+            aria-label="Add annotation"
+          >
+            <div className="selection-title">
+              <div>
+                <span className="section-label">Selected</span>
                 <strong>{targetTitle(selectedTarget)}</strong>
-                <small>{targetMeta(selectedTarget)}</small>
               </div>
-              {selectedTarget.headingPath.length > 0 ? (
-                <p className="selection-path">{selectedTarget.headingPath.join(" / ")}</p>
-              ) : null}
-              <label className="field" htmlFor="annotation-comment">
-                <span>Comment</span>
-                <textarea
-                  id="annotation-comment"
-                  data-testid="annotation-comment"
-                  value={comment}
-                  maxLength={4_000}
-                  placeholder="What should change?"
-                  onChange={(event) => setComment(event.target.value)}
-                />
-              </label>
-              <div className="selection-actions">
-                <button className="quiet-action" type="button" onClick={clearSelection}>
-                  Cancel
-                </button>
-                <button
-                  className="primary-action"
-                  data-testid="add-annotation"
-                  type="button"
-                  disabled={!comment.trim()}
-                  onClick={addAnnotation}
-                >
-                  Add to queue
-                </button>
-              </div>
-            </section>
-          ) : (
-            <section className="empty-selection">
-              <span className="section-label">Selection</span>
-              <p>Select an element or exact text in the artifact. Its context will be attached here.</p>
-            </section>
-          )}
-
-          <section className="annotation-list" aria-label="Queued annotations">
-            <div className="list-heading">
-              <span className="section-label">Annotations</span>
-              {draft.annotations.length > 0 ? <span>{draft.annotations.length}</span> : null}
+              <small>{targetMeta(selectedTarget)}</small>
             </div>
-            {draft.annotations.length === 0 ? <p className="empty-list">Nothing queued yet.</p> : null}
-            {draft.annotations.map((annotation, index) => (
-              <article className="annotation-row" key={annotation.id} data-testid="queued-annotation">
-                <div className="annotation-number">{String(index + 1).padStart(2, "0")}</div>
-                <div className="annotation-copy">
-                  <div className="annotation-target">
-                    <span>{targetMeta(annotation.target)}</span>
-                    <i className={annotation.resolution === "unresolved" ? "unresolved" : "attached"}>
-                      {annotation.resolution === "unresolved" ? "Unresolved" : "Attached"}
-                    </i>
-                  </div>
-                  <strong>{targetTitle(annotation.target)}</strong>
-                  <p>{annotation.comment}</p>
-                </div>
-                <button
-                  className="remove-button"
-                  type="button"
-                  aria-label={`Remove annotation ${index + 1}`}
-                  onClick={() => removeAnnotation(annotation.id)}
-                >
-                  ×
-                </button>
-              </article>
-            ))}
+            {selectedTarget.headingPath.length > 0 ? (
+              <p className="selection-path">{selectedTarget.headingPath.join(" / ")}</p>
+            ) : null}
+            <label className="field" htmlFor="annotation-comment">
+              <span>Comment</span>
+              <textarea
+                autoFocus
+                id="annotation-comment"
+                data-testid="annotation-comment"
+                value={comment}
+                maxLength={4_000}
+                placeholder="What should change?"
+                onChange={(event) => setComment(event.target.value)}
+                onKeyDown={(event) => {
+                  if ((event.metaKey || event.ctrlKey) && event.key === "Enter" && comment.trim()) {
+                    event.preventDefault();
+                    addAnnotation();
+                  }
+                }}
+              />
+            </label>
+            <div className="selection-actions">
+              <button className="quiet-action" type="button" onClick={clearSelection}>
+                Cancel
+              </button>
+              <button
+                className="primary-action"
+                data-testid="add-annotation"
+                type="button"
+                disabled={!comment.trim()}
+                onClick={addAnnotation}
+              >
+                Add annotation
+              </button>
+            </div>
           </section>
+        ) : null}
 
-          <label className="field general-note" htmlFor="reviewer-message">
-            <span>General note</span>
-            <textarea
-              id="reviewer-message"
-              data-testid="reviewer-message"
-              value={draft.message}
-              maxLength={8_000}
-              disabled={ended}
-              placeholder="Optional feedback about the whole artifact…"
-              onChange={(event) => setDraft((current) => ({ ...current, message: event.target.value }))}
-            />
-          </label>
+        {reviewOpen ? (
+          <div
+            className="dialog-backdrop"
+            role="presentation"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) setReviewOpen(false);
+            }}
+          >
+            <section id="review-dialog" className="review-dialog" role="dialog" aria-modal="true" aria-labelledby="review-title">
+              <header className="dialog-header">
+                <div>
+                  <h1 id="review-title">Review</h1>
+                  <p>{draft.annotations.length} annotation{draft.annotations.length === 1 ? "" : "s"}</p>
+                </div>
+                <button className="quiet-action" type="button" onClick={() => setReviewOpen(false)}>
+                  Close
+                </button>
+              </header>
 
-          {error ? <p className="feedback-status error-banner">{error}</p> : null}
-          {notice ? <p className="feedback-status notice-banner">{notice}</p> : null}
+              <div className="dialog-body">
+                <section className="annotation-list" aria-label="Queued annotations">
+                  <div className="list-heading">
+                    <span className="section-label">Annotations</span>
+                    {draft.annotations.length > 0 ? <span>{draft.annotations.length}</span> : null}
+                  </div>
+                  {draft.annotations.length === 0 ? <p className="empty-list">Nothing queued yet.</p> : null}
+                  {draft.annotations.map((annotation, index) => (
+                    <article className="annotation-row" key={annotation.id} data-testid="queued-annotation">
+                      <div className="annotation-number">{String(index + 1).padStart(2, "0")}</div>
+                      <div className="annotation-copy">
+                        <div className="annotation-target">
+                          <span>{targetMeta(annotation.target)}</span>
+                          <i className={annotation.resolution === "unresolved" ? "unresolved" : "attached"}>
+                            {annotation.resolution === "unresolved" ? "Unresolved" : "Attached"}
+                          </i>
+                        </div>
+                        <strong>{targetTitle(annotation.target)}</strong>
+                        <p>{annotation.comment}</p>
+                      </div>
+                      <button
+                        className="remove-button"
+                        type="button"
+                        aria-label={`Remove annotation ${index + 1}`}
+                        onClick={() => removeAnnotation(annotation.id)}
+                      >
+                        ×
+                      </button>
+                    </article>
+                  ))}
+                </section>
 
-          <footer className="panel-actions">
-            <button
-              className="primary-action send-button"
-              data-testid="send-feedback"
-              type="button"
-              disabled={busy || ended || (draft.annotations.length === 0 && !draft.message.trim())}
-              onClick={() => void sendFeedback(false)}
-            >
-              {busy ? "Sending…" : "Send to Agent"}
-            </button>
-            <button
-              className="quiet-action end-button"
-              data-testid="send-end"
-              type="button"
-              disabled={busy || ended}
-              onClick={() => void sendFeedback(true)}
-            >
-              Send &amp; End
-            </button>
-          </footer>
-        </aside>
-        {panelOpen ? (
-          <button
-            className="panel-backdrop"
-            type="button"
-            aria-label="Close review panel"
-            onClick={() => setPanelOpen(false)}
-          />
+                <label className="field general-note" htmlFor="reviewer-message">
+                  <span>General note</span>
+                  <textarea
+                    id="reviewer-message"
+                    data-testid="reviewer-message"
+                    value={draft.message}
+                    maxLength={8_000}
+                    disabled={ended}
+                    placeholder="Optional feedback about the whole artifact…"
+                    onChange={(event) => setDraft((current) => ({ ...current, message: event.target.value }))}
+                  />
+                </label>
+
+                {error ? <p className="feedback-status error-banner">{error}</p> : null}
+                {notice ? <p className="feedback-status notice-banner">{notice}</p> : null}
+              </div>
+
+              <footer className="dialog-actions">
+                <button
+                  className="quiet-action end-button"
+                  data-testid="send-end"
+                  type="button"
+                  disabled={busy || ended}
+                  onClick={() => void sendFeedback(true)}
+                >
+                  Send &amp; End
+                </button>
+                <button
+                  className="primary-action send-button"
+                  data-testid="send-feedback"
+                  type="button"
+                  disabled={busy || ended || (draft.annotations.length === 0 && !draft.message.trim())}
+                  onClick={() => void sendFeedback(false)}
+                >
+                  {busy ? "Sending…" : "Send to Agent"}
+                </button>
+              </footer>
+            </section>
+          </div>
         ) : null}
       </section>
     </main>

@@ -121,7 +121,9 @@ test("completes a safe two-revision annotation loop", async ({ page }) => {
   await page.goto(reviewUrl);
 
   await expect(page.getByText("agent-html-render", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Annotate" })).toHaveClass(/active/);
+  await expect(page.getByRole("button", { name: "Annotate" })).toHaveAttribute("aria-pressed", "false");
+  await expect(page.getByRole("button", { name: "Interact" })).toHaveCount(0);
+  await expect(page.locator("header").getByTestId("review-activity")).toBeVisible();
   await expect(page.getByTestId("revision")).toHaveText("r1");
 
   const artifact = page.frameLocator('[data-testid="artifact-frame"]');
@@ -137,7 +139,6 @@ test("completes a safe two-revision annotation loop", async ({ page }) => {
     link.textContent = "External test link";
     body.append(link);
   });
-  await page.getByRole("button", { name: "Interact" }).click();
   await artifact.getByRole("link", { name: "External test link" }).click();
   await expect(artifact.getByRole("heading", { name: "Authentication rollout" })).toBeVisible();
   await page.getByRole("button", { name: "Annotate" }).click();
@@ -146,10 +147,18 @@ test("completes a safe two-revision annotation loop", async ({ page }) => {
   await expect(page.getByTestId("selection-card")).toBeVisible();
   await expect(page.getByTestId("selection-card")).toContainText("Invite returning users");
   await page.getByTestId("annotation-comment").fill("Clarify when the enrollment invitation appears.");
+  await page.screenshot({ path: "/tmp/agent-html-render-annotation-composer.png", fullPage: true });
   await page.getByTestId("add-annotation").click();
+  await expect(page.getByTestId("selection-card")).toHaveCount(0);
+  await page.getByRole("button", { name: "Review (1)" }).click();
   await expect(page.getByTestId("queued-annotation")).toContainText(
     "Clarify when the enrollment invitation appears.",
   );
+  await page.screenshot({ path: "/tmp/agent-html-render-review-dialog.png", fullPage: true });
+  await page.setViewportSize({ width: 786, height: 900 });
+  await expect(page.getByRole("dialog", { name: "Review" })).toBeVisible();
+  await page.screenshot({ path: "/tmp/agent-html-render-review-dialog-compact.png", fullPage: true });
+  await page.setViewportSize({ width: 1440, height: 900 });
 
   await page.route(
     "**/api/review/*/send?*",
@@ -212,6 +221,7 @@ test("completes a safe two-revision annotation loop", async ({ page }) => {
 
   const finalReview = launchReview();
   await finalReview.ready;
+  await page.getByRole("button", { name: "Review", exact: true }).click();
   await page.getByTestId("reviewer-message").fill("This revision is ready to implement.");
   await page.getByTestId("send-end").click();
   await expect.poll(() => server?.store.get(session.id)?.deliveredFeedbackSequence).toBe(3);

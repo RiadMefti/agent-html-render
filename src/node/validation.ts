@@ -99,3 +99,7 @@ export function parseSendBody(input: unknown): { draft: ReviewDraft; end: boolea
     .parse(input);
   return { draft: parsed.draft as ReviewDraft, end: parsed.end };
 }
+
+export function parseFeedbackAckBody(input: unknown): { sequence: number } {
+  return z.object({ sequence: z.number().int().positive() }).parse(input);
+}

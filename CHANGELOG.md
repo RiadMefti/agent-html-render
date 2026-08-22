@@ -2,6 +2,14 @@
 
 All notable changes to Agent HTML Render are documented here.
 
+## 0.2.2 — 2026-08-22
+
+- Replaced the persistent review drawer and Annotate/Interact tabs with default artifact interaction, a focused annotation composer, and a compact review dialog.
+- Moved revision and delivery activity into the primary header so the artifact keeps the full workspace.
+- Changed agent feedback delivery to explicit acknowledgement, preventing a dropped long-poll connection from consuming reviewer feedback.
+- Made pending feedback resumable in order, including feedback queued immediately before an ended session.
+- Added compatibility detection so `@latest` replaces older daemons that do not support acknowledged delivery.
+
 ## 0.2.1 — 2026-08-22
 
 - Fixed review-shell delivery when `npx` runs Agent HTML Render from npm's hidden cache directory.

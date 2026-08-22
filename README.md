@@ -13,6 +13,7 @@ It works with Codex, Claude Code, OpenCode, and any other agent that can run a C
 - **Ordinary HTML.** Agents use the web platform instead of a proprietary artifact format.
 - **Precise feedback.** Comments retain stable IDs, DOM paths, CSS paths, text quotes, and heading context.
 - **Visible handoff.** The shell shows when feedback is sending, queued, received by the agent, or followed by a revision.
+- **Resumable delivery.** Feedback remains queued until the agent CLI acknowledges it, so an interrupted wait can safely resume.
 - **Local first.** The server binds to loopback, session state stays in the project, and artifacts run in a sandboxed iframe.
 - **Vendor neutral.** One review command and one portable skill work across coding-agent hosts.
 
@@ -47,13 +48,15 @@ the agent receives structured feedback and revises the file
         ↺
 ```
 
-Use **Send to Agent** for another revision or **Send & End** to close the session. The activity strip distinguishes these states:
+Use **Send to Agent** for another revision or **Send & End** to close the session. The activity display in the header distinguishes these states:
 
 - feedback is being saved;
 - feedback is queued but no agent command has picked it up;
 - the agent command received the batch and Agent HTML Render is waiting for a revision;
 - a new revision is ready to inspect;
 - delivery failed and the draft remains available to retry.
+
+The artifact is interactive by default. Choose **Annotate** only when you want to select an element or exact text, then use **Review** to inspect and send the queued batch.
 
 ## CLI
 

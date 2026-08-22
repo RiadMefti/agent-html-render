@@ -4,7 +4,11 @@ import { writeSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import open from "open";
-import type { FeedbackDelivery } from "../shared/protocol.js";
+import {
+  EXPLICIT_FEEDBACK_ACK_CAPABILITY,
+  FEEDBACK_ACK_HEADER,
+  type FeedbackDelivery,
+} from "../shared/protocol.js";
 import {
   currentDaemon,
   daemonRequest,
@@ -15,7 +19,7 @@ import {
 import type { AgentSessionSummary } from "./server.js";
 import { installProjectSkill } from "./install.js";
 
-const VERSION = "0.2.1";
+const VERSION = "0.2.2";
 const MODULE_DIRECTORY = dirname(fileURLToPath(import.meta.url));
 const BUNDLED_SKILL_DIRECTORY = resolve(MODULE_DIRECTORY, "../../skills/agent-html-render");
 
@@ -118,12 +122,21 @@ async function waitForFeedback(
     const response = await daemonRequest(
       metadata,
       `/api/agent/sessions/${encodeURIComponent(sessionId)}/wait?after=${currentCursor}`,
+      { headers: { [FEEDBACK_ACK_HEADER]: EXPLICIT_FEEDBACK_ACK_CAPABILITY } },
     );
     if (response.status === 204) continue;
     const delivery = await responseJson<FeedbackDelivery>(response);
     currentCursor = delivery.sequence;
     return delivery;
   }
+}
+
+async function acknowledgeFeedback(metadata: DaemonMetadata, sessionId: string, sequence: number): Promise<void> {
+  const response = await daemonRequest(metadata, `/api/agent/sessions/${encodeURIComponent(sessionId)}/ack`, {
+    method: "POST",
+    body: JSON.stringify({ sequence }),
+  });
+  await responseJson(response);
 }
 
 async function review(options: ParsedOptions): Promise<void> {
@@ -142,7 +155,7 @@ async function review(options: ParsedOptions): Promise<void> {
       `[agent-html-render] ${session.reviewUrl}\n` +
       "[agent-html-render] Waiting for Send to Agent or Send & End…\n",
   );
-  if (!options.flags.has("--no-open") && session.connectedReviewers === 0) {
+  if (!options.flags.has("--no-open") && session.status === "open" && session.connectedReviewers === 0) {
     try {
       await open(session.reviewUrl, { wait: false });
     } catch (error) {
@@ -156,6 +169,7 @@ async function review(options: ParsedOptions): Promise<void> {
   } else {
     writeStdout(`${JSON.stringify(delivery, null, 2)}\n`);
   }
+  await acknowledgeFeedback(metadata, session.id, delivery.sequence);
 }
 
 async function status(options: ParsedOptions): Promise<void> {

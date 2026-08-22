@@ -130,6 +130,19 @@ export class SessionStore extends EventEmitter {
     return this.list().find((session) => session.status === "open" && session.artifactPath === artifactPath);
   }
 
+  findPendingByArtifact(artifactPath: string): SessionRecord | undefined {
+    let candidate: { session: SessionRecord; sentAt: string } | undefined;
+    for (const session of this.list()) {
+      if (session.artifactPath !== artifactPath) continue;
+      const pending = session.feedbackEvents.find((event) => event.sequence > session.deliveredFeedbackSequence);
+      if (!pending) continue;
+      if (!candidate || pending.feedback.sentAt < candidate.sentAt) {
+        candidate = { session, sentAt: pending.feedback.sentAt };
+      }
+    }
+    return candidate?.session;
+  }
+
   async create(input: CreateSessionInput): Promise<SessionRecord> {
     const now = new Date().toISOString();
     const session: SessionRecord = {
@@ -217,6 +230,10 @@ export class SessionStore extends EventEmitter {
   async markDelivered(id: string, sequence: number): Promise<void> {
     const session = this.requireSession(id);
     if (sequence <= session.deliveredFeedbackSequence) return;
+    const next = this.nextUndelivered(id, 0);
+    if (!next || next.sequence !== sequence) {
+      throw new Error("Feedback must be acknowledged in delivery order.");
+    }
     session.deliveredFeedbackSequence = sequence;
     session.updatedAt = new Date().toISOString();
     await this.persist(session);

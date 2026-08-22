@@ -5,10 +5,15 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import chokidar, { type FSWatcher } from "chokidar";
 import express, { type NextFunction, type Request, type Response } from "express";
-import type { FeedbackDelivery, ReviewEvent } from "../shared/protocol.js";
+import {
+  EXPLICIT_FEEDBACK_ACK_CAPABILITY,
+  FEEDBACK_ACK_HEADER,
+  type FeedbackDelivery,
+  type ReviewEvent,
+} from "../shared/protocol.js";
 import { readArtifact, renderSandboxedArtifact, resolveArtifact } from "./artifact.js";
 import { SessionStore, type SessionRecord } from "./store.js";
-import { parseReviewDraft, parseSendBody } from "./validation.js";
+import { parseFeedbackAckBody, parseReviewDraft, parseSendBody } from "./validation.js";
 
 const MODULE_DIRECTORY = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_UI_DIRECTORY = resolve(MODULE_DIRECTORY, "../ui");
@@ -143,7 +148,13 @@ export async function startServer(options: StartServerOptions): Promise<RunningS
   };
 
   app.get("/api/health", requireAgentToken, (_request, response) => {
-    response.json({ name: "agent-html-render", protocolVersion: "1", rootPath, pid: process.pid });
+    response.json({
+      name: "agent-html-render",
+      protocolVersion: "1",
+      capabilities: [EXPLICIT_FEEDBACK_ACK_CAPABILITY],
+      rootPath,
+      pid: process.pid,
+    });
   });
 
   app.post(
@@ -162,7 +173,7 @@ export async function startServer(options: StartServerOptions): Promise<RunningS
         return;
       }
       const { hash } = await readArtifact(artifact.artifactPath);
-      let session = store.findOpenByArtifact(artifact.artifactPath);
+      let session = store.findPendingByArtifact(artifact.artifactPath) ?? store.findOpenByArtifact(artifact.artifactPath);
       if (session) {
         session = await store.refreshContentHash(session.id, hash);
       } else {
@@ -190,9 +201,10 @@ export async function startServer(options: StartServerOptions): Promise<RunningS
         return;
       }
       const after = parseCursor(request.query.after);
+      const explicitAcknowledgement = request.header(FEEDBACK_ACK_HEADER) === EXPLICIT_FEEDBACK_ACK_CAPABILITY;
       const immediate = store.nextUndelivered(id, after);
       if (immediate) {
-        await store.markDelivered(id, immediate.sequence);
+        if (!explicitAcknowledgement) await store.markDelivered(id, immediate.sequence);
         response.json(immediate);
         return;
       }
@@ -210,6 +222,10 @@ export async function startServer(options: StartServerOptions): Promise<RunningS
           response.status(204).end();
           return;
         }
+        if (explicitAcknowledgement) {
+          response.json(delivery);
+          return;
+        }
         void store
           .markDelivered(id, delivery.sequence)
           .then(() => response.json(delivery))
@@ -225,6 +241,21 @@ export async function startServer(options: StartServerOptions): Promise<RunningS
           cleanup();
         }
       });
+    }),
+  );
+
+  app.post(
+    "/api/agent/sessions/:id/ack",
+    requireAgentToken,
+    asyncRoute(async (request, response) => {
+      const id = routeParameter(request.params.id);
+      if (!store.get(id)) {
+        response.status(404).json({ error: "Unknown Agent HTML Render session." });
+        return;
+      }
+      const { sequence } = parseFeedbackAckBody(request.body);
+      await store.markDelivered(id, sequence);
+      response.json({ deliveredFeedbackSequence: store.get(id)?.deliveredFeedbackSequence ?? 0 });
     }),
   );
 

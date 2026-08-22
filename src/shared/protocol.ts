@@ -1,4 +1,6 @@
 export const PROTOCOL_VERSION = "1" as const;
+export const EXPLICIT_FEEDBACK_ACK_CAPABILITY = "explicit-feedback-ack-v1" as const;
+export const FEEDBACK_ACK_HEADER = "x-agent-html-render-feedback-ack" as const;
 
 export type SessionStatus = "open" | "ended";
 export type FeedbackStatus = "feedback" | "ended";

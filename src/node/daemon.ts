@@ -3,6 +3,7 @@ import { randomBytes } from "node:crypto";
 import { mkdir, readFile, realpath, rename, unlink, writeFile } from "node:fs/promises";
 import { existsSync, readFileSync, unlinkSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { EXPLICIT_FEEDBACK_ACK_CAPABILITY } from "../shared/protocol.js";
 import { startServer, type RunningServer } from "./server.js";
 
 export interface DaemonMetadata {
@@ -51,17 +52,27 @@ async function writeMetadata(metadata: DaemonMetadata): Promise<void> {
   await rename(temporary, target);
 }
 
-async function metadataIsHealthy(metadata: DaemonMetadata): Promise<boolean> {
+interface DaemonInspection {
+  healthy: boolean;
+  compatible: boolean;
+}
+
+async function inspectDaemon(metadata: DaemonMetadata): Promise<DaemonInspection> {
   try {
     const response = await fetch(`http://127.0.0.1:${metadata.port}/api/health`, {
       headers: { authorization: `Bearer ${metadata.token}` },
       signal: AbortSignal.timeout(1_000),
     });
-    if (!response.ok) return false;
-    const body = (await response.json()) as { rootPath?: string; pid?: number };
-    return body.rootPath === metadata.rootPath && body.pid === metadata.pid;
+    if (!response.ok) return { healthy: false, compatible: false };
+    const body = (await response.json()) as { rootPath?: string; pid?: number; capabilities?: unknown };
+    const healthy = body.rootPath === metadata.rootPath && body.pid === metadata.pid;
+    const compatible =
+      healthy &&
+      Array.isArray(body.capabilities) &&
+      body.capabilities.includes(EXPLICIT_FEEDBACK_ACK_CAPABILITY);
+    return { healthy, compatible };
   } catch {
-    return false;
+    return { healthy: false, compatible: false };
   }
 }
 
@@ -72,7 +83,11 @@ function delay(milliseconds: number): Promise<void> {
 export async function ensureDaemon(rootInput: string): Promise<DaemonMetadata> {
   const rootPath = await realpath(resolve(rootInput));
   const existing = await readMetadata(rootPath);
-  if (existing && (await metadataIsHealthy(existing))) return existing;
+  const inspection = existing ? await inspectDaemon(existing) : undefined;
+  if (existing && inspection?.compatible) return existing;
+  if (existing && inspection?.healthy) {
+    await daemonRequest(existing, "/api/agent/stop", { method: "POST" }).catch(() => undefined);
+  }
   if (existing) await unlink(daemonMetadataPath(rootPath)).catch(() => undefined);
 
   await mkdir(agentHtmlRenderStateDirectory(rootPath), { recursive: true });
@@ -93,7 +108,7 @@ export async function ensureDaemon(rootInput: string): Promise<DaemonMetadata> {
   const deadline = Date.now() + START_TIMEOUT_MILLISECONDS;
   while (Date.now() < deadline) {
     const metadata = await readMetadata(rootPath);
-    if (metadata && (await metadataIsHealthy(metadata))) return metadata;
+    if (metadata && (await inspectDaemon(metadata)).compatible) return metadata;
     await delay(100);
   }
   throw new Error("Agent HTML Render daemon did not become ready within 12 seconds.");
@@ -148,5 +163,5 @@ export async function daemonRequest(
 export async function currentDaemon(rootInput: string): Promise<DaemonMetadata | undefined> {
   const rootPath = await realpath(resolve(rootInput));
   const metadata = await readMetadata(rootPath);
-  return metadata && (await metadataIsHealthy(metadata)) ? metadata : undefined;
+  return metadata && (await inspectDaemon(metadata)).healthy ? metadata : undefined;
 }
