@@ -1,6 +1,6 @@
 # Agent HTML Render default theme
 
-Use this visual grammar when neither the user nor the project supplies one. It comes from the `agent-orchestrator` interface and is deliberately a theme rather than a page template.
+Use these defaults only when the user and project provide no design direction. They come from the `agent-orchestrator` interface and do not prescribe a page layout.
 
 ## Tokens
 
@@ -30,11 +30,11 @@ button, input, select, textarea { font: inherit; }
 ## Visual grammar
 
 - Prefer plain typography, whitespace, and 1px separators over decorative containers.
-- Use centered reading widths near `940px` when the content is document-like; choose another layout when the subject calls for it.
+- Use a centered reading width near `940px` for documents. Choose another layout for diagrams, comparisons, dashboards, or other structures that need it.
 - Set primary headings around `28–42px`, weight `550`, with restrained negative letter spacing. Keep body copy around `13–15px` with generous line height.
 - Use `--muted` for context and secondary copy, `--quiet` for placeholders, and `--faint` for rules.
 - Keep actions transparent and text-led. A primary action may use a 1px bottom border; it does not need a filled button.
-- When a dialog is useful, use `#fafafa`, a `1px solid #dcdcdc` border, and at most `0 18px 60px rgb(0 0 0 / 6%)` shadow.
-- Avoid gradients, ornamental logo tiles, pill badges, oversized hero type, and repeated rounded cards unless the content or the user's design direction genuinely calls for them.
+- For dialogs, use `#fafafa`, a `1px solid #dcdcdc` border, and at most `0 18px 60px rgb(0 0 0 / 6%)` shadow.
+- Avoid gradients, ornamental logo tiles, pill badges, oversized hero type, and repeated rounded cards unless the user or project asks for them.
 
-Adapt these choices to the artifact. Do not reproduce an application shell or force every subject into the same component arrangement.
+Adapt the theme to the artifact. Do not copy an application shell or force each subject into the same components.

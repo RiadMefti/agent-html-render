@@ -2,17 +2,17 @@
 
 ## Supported versions
 
-Agent HTML Render is currently in its `0.2.x` development line. Security fixes are applied to the latest release only.
+Agent HTML Render is currently in its `0.3.x` development line. Security fixes go to the latest release only.
 
 ## Reporting a vulnerability
 
 Please use [GitHub private vulnerability reporting](https://github.com/RiadMefti/agent-html-render/security/advisories/new). Do not include an active Agent HTML Render review URL, daemon token, session file, or sensitive reviewed artifact in a public issue.
 
-Include the affected version, operating system, reproduction steps, expected impact, and any suggested mitigation. Reports will be acknowledged as soon as practical and coordinated disclosure is preferred.
+Include the affected version, operating system, reproduction steps, expected impact, and any suggested mitigation. We will acknowledge the report and coordinate disclosure with you.
 
 ## Security boundaries
 
-Agent HTML Render is designed to protect the reviewer from untrusted agent-authored HTML while keeping transport local to the machine. Its main guarantees are:
+The sandbox limits what agent-authored HTML can do, and the daemon listens only on the local machine. The security boundaries are:
 
 - loopback-only HTTP transport;
 - separate random secrets for agent and reviewer access;

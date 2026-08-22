@@ -1,6 +1,6 @@
 # Contributing to Agent HTML Render
 
-Thanks for helping improve Agent HTML Render. Keep contributions local-first, vendor-neutral, and small enough to review.
+Keep changes local-first, vendor-neutral, and small enough to review.
 
 ## Development setup
 
@@ -26,7 +26,7 @@ npm run test:all
 npm pack --dry-run
 ```
 
-The host smoke check expects Codex, Claude Code, and OpenCode to be available on `PATH`. If you cannot run one of them, state that clearly in the pull request.
+The host smoke check expects Codex, Claude Code, and OpenCode on `PATH`. List any host you could not test in the pull request.
 
 ## Engineering expectations
 
@@ -39,6 +39,6 @@ The host smoke check expects Codex, Claude Code, and OpenCode to be available on
 
 ## Pull requests
 
-Keep each pull request focused. Explain the user-visible outcome, security implications, and verification performed. Screenshots are useful for review-shell changes, but avoid including private artifact content.
+Keep each pull request focused. Explain what changes for the user, note any security impact, and list the checks you ran. Include screenshots for review-shell changes when they help, but remove private artifact content.
 
 For vulnerabilities, follow [SECURITY.md](SECURITY.md) instead of opening a public issue.
