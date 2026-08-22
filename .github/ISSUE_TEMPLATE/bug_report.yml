@@ -1,5 +1,5 @@
 name: Bug report
-description: Report reproducible AgentRender behavior that is incorrect or unclear.
+description: Report reproducible Agent HTML Render behavior that is incorrect or unclear.
 title: "bug: "
 labels: [bug]
 body:
@@ -9,7 +9,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: AgentRender version
+      label: Agent HTML Render version
       placeholder: 0.2.0
     validations:
       required: true

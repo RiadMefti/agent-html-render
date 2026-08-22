@@ -9,7 +9,7 @@ export default defineConfig({
     minify: false,
     lib: {
       entry: resolve(import.meta.dirname, "src/bridge/bridge.ts"),
-      name: "AgentRenderBridge",
+      name: "AgentHtmlRenderBridge",
       formats: ["iife"],
       fileName: () => "bridge.js",
     },

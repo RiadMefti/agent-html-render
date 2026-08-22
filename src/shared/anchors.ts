@@ -2,7 +2,11 @@ import type { RangeAnchor, StableAttribute, TargetDescriptor, TextQuote } from "
 
 const MAX_TARGET_TEXT = 600;
 const MAX_QUOTE_CONTEXT = 80;
-const REVIEW_DATA_ATTRIBUTES = ["data-agentrender-id", "data-agentlens-id"] as const;
+const REVIEW_DATA_ATTRIBUTES = [
+  "data-agent-html-render-id",
+  "data-agentrender-id",
+  "data-agentlens-id",
+] as const;
 
 type ReviewDataAttribute = (typeof REVIEW_DATA_ATTRIBUTES)[number];
 
@@ -344,8 +348,10 @@ export function resolveTarget(root: Element, target: TargetDescriptor): Resolved
   if (target.stableId && target.stableAttribute) {
     const compatibleAttributes: StableAttribute[] =
       target.stableAttribute === "data-agentlens-id"
-        ? ["data-agentlens-id", "data-agentrender-id"]
-        : [target.stableAttribute];
+        ? ["data-agentlens-id", "data-agentrender-id", "data-agent-html-render-id"]
+        : target.stableAttribute === "data-agentrender-id"
+          ? ["data-agentrender-id", "data-agent-html-render-id"]
+          : [target.stableAttribute];
     for (const attribute of compatibleAttributes) {
       const selector = `[${attribute}="${escapeCss(target.stableId)}"]`;
       const element = root.matches(selector) ? root : root.querySelector(selector);
@@ -358,7 +364,7 @@ export function resolveTarget(root: Element, target: TargetDescriptor): Resolved
   if (target.cssPath) {
     try {
       const element = root.matches(target.cssPath) ? root : root.querySelector(target.cssPath);
-      const pathIsStable = /(?:data-agent(?:render|lens)-id|#[a-zA-Z_-])/.test(target.cssPath);
+      const pathIsStable = /(?:data-agent(?:-html-render|render|lens)-id|#[a-zA-Z_-])/.test(target.cssPath);
       if (element && matchingElement(element, target, pathIsStable)) {
         return { element, strategy: "css-path" };
       }

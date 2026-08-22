@@ -6,13 +6,13 @@ import { installProjectSkill } from "../../src/node/install.js";
 
 describe("portable skill installer", () => {
   it("installs one canonical skill and a Claude-compatible adapter without overwriting", async () => {
-    const root = await mkdtemp(join(tmpdir(), "agentrender-install-"));
-    const source = resolve("skills/agentrender");
+    const root = await mkdtemp(join(tmpdir(), "agent-html-render-install-"));
+    const source = resolve("skills/agent-html-render");
 
     const first = await installProjectSkill(root, source);
     expect(first.canonicalStatus).toBe("installed");
     expect(["linked", "copied"]).toContain(first.claudeStatus);
-    expect(await readFile(join(first.canonicalPath, "SKILL.md"), "utf8")).toContain("# AgentRender review loop");
+    expect(await readFile(join(first.canonicalPath, "SKILL.md"), "utf8")).toContain("# Agent HTML Render review loop");
     expect(first.legacyPaths).toEqual([]);
     expect((await lstat(first.claudePath)).isSymbolicLink() || (await lstat(first.claudePath)).isDirectory()).toBe(
       true,
@@ -26,15 +26,19 @@ describe("portable skill installer", () => {
     await expect(installProjectSkill(root, source)).rejects.toThrow("different skill already exists");
   });
 
-  it("reports legacy AgentLens skills without deleting them", async () => {
-    const root = await mkdtemp(join(tmpdir(), "agentrender-legacy-install-"));
-    const source = resolve("skills/agentrender");
-    const legacyPath = join(root, ".agents", "skills", "agentlens");
-    await mkdir(legacyPath, { recursive: true });
-    await writeFile(join(legacyPath, "SKILL.md"), "legacy user-owned skill");
+  it("reports legacy AgentLens and AgentRender skills without deleting them", async () => {
+    const root = await mkdtemp(join(tmpdir(), "agent-html-render-legacy-install-"));
+    const source = resolve("skills/agent-html-render");
+    const legacyAgentLensPath = join(root, ".agents", "skills", "agentlens");
+    const previewAgentRenderPath = join(root, ".claude", "skills", "agentrender");
+    await mkdir(legacyAgentLensPath, { recursive: true });
+    await mkdir(previewAgentRenderPath, { recursive: true });
+    await writeFile(join(legacyAgentLensPath, "SKILL.md"), "legacy user-owned skill");
+    await writeFile(join(previewAgentRenderPath, "SKILL.md"), "preview user-owned skill");
 
     const result = await installProjectSkill(root, source);
-    expect(result.legacyPaths).toContain(legacyPath);
-    expect(await readFile(join(legacyPath, "SKILL.md"), "utf8")).toBe("legacy user-owned skill");
+    expect(result.legacyPaths).toEqual(expect.arrayContaining([legacyAgentLensPath, previewAgentRenderPath]));
+    expect(await readFile(join(legacyAgentLensPath, "SKILL.md"), "utf8")).toBe("legacy user-owned skill");
+    expect(await readFile(join(previewAgentRenderPath, "SKILL.md"), "utf8")).toBe("preview user-owned skill");
   });
 });

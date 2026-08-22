@@ -1,10 +1,10 @@
-# Contributing to AgentRender
+# Contributing to Agent HTML Render
 
-Thanks for helping improve AgentRender. Keep contributions local-first, vendor-neutral, and small enough to review.
+Thanks for helping improve Agent HTML Render. Keep contributions local-first, vendor-neutral, and small enough to review.
 
 ## Development setup
 
-AgentRender requires Node.js 20.19 or newer.
+Agent HTML Render requires Node.js 20.19 or newer.
 
 ```bash
 npm ci
@@ -35,7 +35,7 @@ The host smoke check expects Codex, Claude Code, and OpenCode to be available on
 - Keep the review shell visually restrained: `#fafafa`, `#171717`, system typography, hairline separators, and flat text actions.
 - Do not impose the shell layout or fallback theme on agent-authored artifacts.
 - Add focused tests for behavior changes. Security-boundary changes need both positive and negative coverage.
-- Do not commit `dist/`, `.agentrender/`, legacy `.agentlens/`, browser reports, credentials, or local review URLs containing access tokens.
+- Do not commit `dist/`, `.agent-html-render/`, legacy `.agentlens/` or `.agentrender/`, browser reports, credentials, or local review URLs containing access tokens.
 
 ## Pull requests
 

@@ -1,4 +1,4 @@
-# AgentRender default theme
+# Agent HTML Render default theme
 
 Use this visual grammar when neither the user nor the project supplies one. It comes from the `agent-orchestrator` interface and is deliberately a theme rather than a page template.
 

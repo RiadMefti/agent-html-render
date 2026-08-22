@@ -12,19 +12,19 @@ describe("durable target anchors", () => {
   it("anchors descendant paths to the nearest stable review region", () => {
     document.body.innerHTML = `
       <main>
-        <article data-agentrender-id="phase-offer"><div><h2>Offer</h2></div></article>
+        <article data-agent-html-render-id="phase-offer"><div><h2>Offer</h2></div></article>
       </main>
     `;
     const heading = document.querySelector("h2");
     if (!heading) throw new Error("fixture heading is missing");
 
-    expect(cssPathForElement(heading)).toBe('[data-agentrender-id="phase-offer"] > div > h2');
+    expect(cssPathForElement(heading)).toBe('[data-agent-html-render-id="phase-offer"] > div > h2');
     const target = targetFromElement(heading, document.body);
 
     document.body.innerHTML = `
       <main>
         <p>A new introduction.</p>
-        <article data-agentrender-id="phase-offer"><div><h2>Invite</h2></div></article>
+        <article data-agent-html-render-id="phase-offer"><div><h2>Invite</h2></div></article>
       </main>
     `;
 
@@ -33,7 +33,7 @@ describe("durable target anchors", () => {
     expect(resolved?.element.textContent).toBe("Invite");
   });
 
-  it("reattaches legacy AgentLens IDs after an artifact adopts AgentRender IDs", () => {
+  it("reattaches legacy AgentLens IDs after an artifact adopts Agent HTML Render IDs", () => {
     document.body.innerHTML = `
       <article data-agentlens-id="phase-offer"><h2>Offer</h2></article>
     `;
@@ -42,7 +42,24 @@ describe("durable target anchors", () => {
     const target = targetFromElement(article, document.body);
 
     document.body.innerHTML = `
-      <article data-agentrender-id="phase-offer"><h2>Invite</h2></article>
+      <article data-agent-html-render-id="phase-offer"><h2>Invite</h2></article>
+    `;
+
+    const resolved = resolveTarget(document.body, target);
+    expect(resolved?.strategy).toBe("stable-id");
+    expect(resolved?.element.textContent).toBe("Invite");
+  });
+
+  it("reattaches pre-release AgentRender IDs after an artifact adopts Agent HTML Render IDs", () => {
+    document.body.innerHTML = `
+      <article data-agentrender-id="phase-offer"><h2>Offer</h2></article>
+    `;
+    const article = document.querySelector("article");
+    if (!article) throw new Error("fixture article is missing");
+    const target = targetFromElement(article, document.body);
+
+    document.body.innerHTML = `
+      <article data-agent-html-render-id="phase-offer"><h2>Invite</h2></article>
     `;
 
     const resolved = resolveTarget(document.body, target);

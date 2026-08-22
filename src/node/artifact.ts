@@ -22,7 +22,7 @@ export async function resolveArtifact(rootInput: string, artifactInput: string):
     isAbsolute(artifactRelativePath);
   if (escapesRoot) throw new Error("The artifact must be inside the selected project root.");
   if (extname(artifactPath).toLowerCase() !== ".html") {
-    throw new Error("AgentRender only reviews .html artifacts.");
+    throw new Error("Agent HTML Render only reviews .html artifacts.");
   }
   const details = await stat(artifactPath);
   if (!details.isFile()) throw new Error("The artifact path must point to a file.");
@@ -86,7 +86,7 @@ export function renderSandboxedArtifact(
   const injection = [
     `<meta http-equiv="Content-Security-Policy" content="${csp}">`,
     '<meta name="referrer" content="no-referrer">',
-    `<script nonce="${nonce}">window.__AGENTRENDER_BRIDGE__=${safeJson(configuration)};\n${bridgeSource}\n</script>`,
+    `<script nonce="${nonce}">window.__AGENT_HTML_RENDER_BRIDGE__=${safeJson(configuration)};\n${bridgeSource}\n</script>`,
   ].join("\n");
   const withoutCsp = stripPolicyMeta(html);
   if (/<head(?:\s[^>]*)?>/i.test(withoutCsp)) {

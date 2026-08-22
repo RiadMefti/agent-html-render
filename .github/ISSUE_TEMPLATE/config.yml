@@ -1,5 +1,5 @@
 blank_issues_enabled: true
 contact_links:
   - name: Report a vulnerability privately
-    url: https://github.com/RiadMefti/agentrender/security/advisories/new
+    url: https://github.com/RiadMefti/agent-html-render/security/advisories/new
     about: Use private vulnerability reporting for security issues.

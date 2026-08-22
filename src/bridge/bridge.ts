@@ -10,7 +10,7 @@ import type {
 
 declare global {
   interface Window {
-    __AGENTRENDER_BRIDGE__?: BridgeConfiguration;
+    __AGENT_HTML_RENDER_BRIDGE__?: BridgeConfiguration;
   }
 }
 
@@ -20,7 +20,7 @@ interface PaintedAnchor {
 }
 
 function start(): void {
-  const candidate = window.__AGENTRENDER_BRIDGE__;
+  const candidate = window.__AGENT_HTML_RENDER_BRIDGE__;
   if (!candidate || !document.body) return;
   const configuration: BridgeConfiguration = candidate;
 
@@ -35,14 +35,14 @@ function start(): void {
 
   function post(message: BridgeToParentPayload): void {
     window.parent.postMessage(
-      { source: "agentrender-bridge", token: configuration.token, ...message } satisfies BridgeToParentMessage,
+      { source: "agent-html-render-bridge", token: configuration.token, ...message } satisfies BridgeToParentMessage,
       configuration.parentOrigin,
     );
   }
 
   function createOverlay(kind: "hover" | "selection" | "annotation", label?: string): HTMLDivElement {
     const overlay = document.createElement("div");
-    overlay.dataset.agentrenderBridge = kind;
+    overlay.dataset.agentHtmlRenderBridge = kind;
     Object.assign(overlay.style, {
       position: "fixed",
       display: "none",
@@ -105,7 +105,7 @@ function start(): void {
   }
 
   function bridgeElement(element: Element | null): boolean {
-    return Boolean(element?.closest("[data-agentrender-bridge]"));
+    return Boolean(element?.closest("[data-agent-html-render-bridge]"));
   }
 
   function elementFromEvent(event: Event): Element | null {

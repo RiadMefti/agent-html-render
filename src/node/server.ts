@@ -65,7 +65,7 @@ function parseCursor(value: unknown): number {
 function sessionAccess(request: Request): string {
   const queryAccess = request.query.access;
   if (typeof queryAccess === "string") return queryAccess;
-  return request.header("x-agentrender-access") ?? "";
+  return request.header("x-agent-html-render-access") ?? "";
 }
 
 function routeParameter(value: string | string[] | undefined): string {
@@ -143,7 +143,7 @@ export async function startServer(options: StartServerOptions): Promise<RunningS
   };
 
   app.get("/api/health", requireAgentToken, (_request, response) => {
-    response.json({ name: "agentrender", protocolVersion: "1", rootPath, pid: process.pid });
+    response.json({ name: "agent-html-render", protocolVersion: "1", rootPath, pid: process.pid });
   });
 
   app.post(
@@ -186,7 +186,7 @@ export async function startServer(options: StartServerOptions): Promise<RunningS
     asyncRoute(async (request, response) => {
       const id = routeParameter(request.params.id);
       if (!store.get(id)) {
-        response.status(404).json({ error: "Unknown AgentRender session." });
+        response.status(404).json({ error: "Unknown Agent HTML Render session." });
         return;
       }
       const after = parseCursor(request.query.after);
@@ -330,8 +330,8 @@ export async function startServer(options: StartServerOptions): Promise<RunningS
   );
 
   app.use((error: unknown, _request: Request, response: Response, _next: NextFunction) => {
-    const message = error instanceof Error ? error.message : "Unexpected AgentRender server error.";
-    const status = message.includes("Unknown AgentRender session") || message.includes("has ended") ? 409 : 400;
+    const message = error instanceof Error ? error.message : "Unexpected Agent HTML Render server error.";
+    const status = message.includes("Unknown Agent HTML Render session") || message.includes("has ended") ? 409 : 400;
     if (!response.headersSent) response.status(status).json({ error: message });
   });
 
@@ -343,7 +343,7 @@ export async function startServer(options: StartServerOptions): Promise<RunningS
     });
   });
   const address = httpServer.address();
-  if (!address || typeof address === "string") throw new Error("AgentRender could not determine its listening port.");
+  if (!address || typeof address === "string") throw new Error("Agent HTML Render could not determine its listening port.");
   origin = `http://127.0.0.1:${address.port}`;
   for (const session of store.list()) ensureWatcher(session);
 

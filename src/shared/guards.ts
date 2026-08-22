@@ -75,6 +75,7 @@ export function isTargetDescriptor(value: unknown): value is TargetDescriptor {
   if (candidate.stableId !== undefined && !boundedString(candidate.stableId, 300)) return false;
   if (
     candidate.stableAttribute !== undefined &&
+    candidate.stableAttribute !== "data-agent-html-render-id" &&
     candidate.stableAttribute !== "data-agentrender-id" &&
     candidate.stableAttribute !== "data-agentlens-id" &&
     candidate.stableAttribute !== "id"
@@ -142,7 +143,7 @@ export function isReviewEvent(value: unknown): value is ReviewEvent {
 
 export function isBridgeToParentMessage(value: unknown, token: string): value is BridgeToParentMessage {
   const candidate = record(value);
-  if (!candidate || candidate.source !== "agentrender-bridge" || candidate.token !== token) return false;
+  if (!candidate || candidate.source !== "agent-html-render-bridge" || candidate.token !== token) return false;
   if (candidate.type === "ready") return true;
   if (candidate.type === "target-selected") return isTargetDescriptor(candidate.target);
   if (candidate.type !== "anchor-resolutions" || !Array.isArray(candidate.resolutions)) return false;
@@ -161,7 +162,7 @@ export function isBridgeToParentMessage(value: unknown, token: string): value is
 
 export function isParentToBridgeMessage(value: unknown, token: string): value is ParentToBridgeMessage {
   const candidate = record(value);
-  if (!candidate || candidate.source !== "agentrender-shell" || candidate.token !== token) return false;
+  if (!candidate || candidate.source !== "agent-html-render-shell" || candidate.token !== token) return false;
   if (candidate.type === "clear-selection") return true;
   if (candidate.type === "set-selection-mode") return typeof candidate.enabled === "boolean";
   return (

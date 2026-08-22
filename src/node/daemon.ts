@@ -16,12 +16,12 @@ export interface DaemonMetadata {
 
 const START_TIMEOUT_MILLISECONDS = 12_000;
 
-export function agentRenderStateDirectory(rootPath: string): string {
-  return join(rootPath, ".agentrender");
+export function agentHtmlRenderStateDirectory(rootPath: string): string {
+  return join(rootPath, ".agent-html-render");
 }
 
 export function daemonMetadataPath(rootPath: string): string {
-  return join(agentRenderStateDirectory(rootPath), "daemon.json");
+  return join(agentHtmlRenderStateDirectory(rootPath), "daemon.json");
 }
 
 async function readMetadata(rootPath: string): Promise<DaemonMetadata | undefined> {
@@ -46,7 +46,7 @@ async function readMetadata(rootPath: string): Promise<DaemonMetadata | undefine
 async function writeMetadata(metadata: DaemonMetadata): Promise<void> {
   const target = daemonMetadataPath(metadata.rootPath);
   const temporary = `${target}.tmp`;
-  await mkdir(agentRenderStateDirectory(metadata.rootPath), { recursive: true });
+  await mkdir(agentHtmlRenderStateDirectory(metadata.rootPath), { recursive: true });
   await writeFile(temporary, `${JSON.stringify(metadata, null, 2)}\n`, { mode: 0o600 });
   await rename(temporary, target);
 }
@@ -75,9 +75,9 @@ export async function ensureDaemon(rootInput: string): Promise<DaemonMetadata> {
   if (existing && (await metadataIsHealthy(existing))) return existing;
   if (existing) await unlink(daemonMetadataPath(rootPath)).catch(() => undefined);
 
-  await mkdir(agentRenderStateDirectory(rootPath), { recursive: true });
+  await mkdir(agentHtmlRenderStateDirectory(rootPath), { recursive: true });
   const entryPath = process.argv[1];
-  if (!entryPath) throw new Error("AgentRender could not determine its CLI entry point.");
+  if (!entryPath) throw new Error("Agent HTML Render could not determine its CLI entry point.");
   const child = spawn(
     process.execPath,
     [...process.execArgv, entryPath, "__daemon", "--root", rootPath],
@@ -85,7 +85,7 @@ export async function ensureDaemon(rootInput: string): Promise<DaemonMetadata> {
       cwd: rootPath,
       detached: process.platform !== "win32",
       stdio: "ignore",
-      env: { ...process.env, AGENTRENDER_DAEMON: "1" },
+      env: { ...process.env, AGENT_HTML_RENDER_DAEMON: "1" },
     },
   );
   child.unref();
@@ -96,7 +96,7 @@ export async function ensureDaemon(rootInput: string): Promise<DaemonMetadata> {
     if (metadata && (await metadataIsHealthy(metadata))) return metadata;
     await delay(100);
   }
-  throw new Error("AgentRender daemon did not become ready within 12 seconds.");
+  throw new Error("Agent HTML Render daemon did not become ready within 12 seconds.");
 }
 
 export async function runDaemon(rootInput: string): Promise<RunningServer> {

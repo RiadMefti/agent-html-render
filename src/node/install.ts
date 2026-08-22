@@ -42,11 +42,11 @@ async function installCanonical(source: string, target: string): Promise<"instal
   if (await pathExists(target)) {
     if (await sameBundledSkill(source, target)) return "present";
     throw new Error(
-      `A different skill already exists at ${target}. Move it aside before installing AgentRender.`,
+      `A different skill already exists at ${target}. Move it aside before installing Agent HTML Render.`,
     );
   }
   await mkdir(dirname(target), { recursive: true });
-  const temporary = join(dirname(target), `.agentrender-${randomUUID()}`);
+  const temporary = join(dirname(target), `.agent-html-render-${randomUUID()}`);
   await cp(source, temporary, { recursive: true, errorOnExist: true, force: false });
   await rename(temporary, target);
   return "installed";
@@ -60,7 +60,7 @@ async function installClaudeLink(
   if (await pathExists(target)) {
     if (await sameBundledSkill(source, target)) return "present";
     throw new Error(
-      `A different skill already exists at ${target}. Move it aside before installing AgentRender.`,
+      `A different skill already exists at ${target}. Move it aside before installing Agent HTML Render.`,
     );
   }
   await mkdir(dirname(target), { recursive: true });
@@ -78,11 +78,13 @@ async function installClaudeLink(
 
 export async function installProjectSkill(rootPath: string, sourceDirectory: string): Promise<SkillInstallResult> {
   await readFile(join(sourceDirectory, "SKILL.md"), "utf8");
-  const canonicalPath = join(rootPath, ".agents", "skills", "agentrender");
-  const claudePath = join(rootPath, ".claude", "skills", "agentrender");
+  const canonicalPath = join(rootPath, ".agents", "skills", "agent-html-render");
+  const claudePath = join(rootPath, ".claude", "skills", "agent-html-render");
   const legacyCandidates = [
     join(rootPath, ".agents", "skills", "agentlens"),
     join(rootPath, ".claude", "skills", "agentlens"),
+    join(rootPath, ".agents", "skills", "agentrender"),
+    join(rootPath, ".claude", "skills", "agentrender"),
   ];
   const canonicalStatus = await installCanonical(sourceDirectory, canonicalPath);
   const claudeStatus = await installClaudeLink(sourceDirectory, canonicalPath, claudePath);

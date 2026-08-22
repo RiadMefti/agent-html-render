@@ -22,7 +22,9 @@ const targetDescriptorSchema = z.object({
   role: boundedString(120).optional(),
   label: boundedString(240).optional(),
   stableId: boundedString(300).optional(),
-  stableAttribute: z.enum(["data-agentrender-id", "data-agentlens-id", "id"]).optional(),
+  stableAttribute: z
+    .enum(["data-agent-html-render-id", "data-agentrender-id", "data-agentlens-id", "id"])
+    .optional(),
   cssPath: boundedString(2_000),
   domPath: z.array(z.number().int().nonnegative()).max(64),
   text: boundedString(1_200),

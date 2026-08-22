@@ -3,8 +3,9 @@ dist/
 coverage/
 playwright-report/
 test-results/
-.agentrender/
-# Legacy AgentLens workspaces may still contain private state or artifacts.
+.agent-html-render/
+# Legacy AgentLens and pre-release AgentRender workspaces may still contain private state or artifacts.
 .agentlens/
+.agentrender/
 .lavish/
 *.log

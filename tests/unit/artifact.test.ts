@@ -10,7 +10,7 @@ import {
 
 describe("artifact boundary", () => {
   it("accepts only canonical HTML files inside the project root", async () => {
-    const parent = await mkdtemp(join(tmpdir(), "agentrender-artifact-"));
+    const parent = await mkdtemp(join(tmpdir(), "agent-html-render-artifact-"));
     const root = join(parent, "project");
     await mkdir(root);
     await writeFile(join(root, "review.html"), "<!doctype html><p>Review</p>");
@@ -25,7 +25,7 @@ describe("artifact boundary", () => {
   });
 
   it("rejects non-HTML and oversized files", async () => {
-    const root = await mkdtemp(join(tmpdir(), "agentrender-limits-"));
+    const root = await mkdtemp(join(tmpdir(), "agent-html-render-limits-"));
     await writeFile(join(root, "notes.txt"), "notes");
     await writeFile(join(root, "large.html"), "x".repeat(MAX_ARTIFACT_BYTES + 1));
 

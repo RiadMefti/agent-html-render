@@ -63,7 +63,7 @@ function launchReview(): ReviewRun {
       child.kill("SIGTERM");
       reject(
         new Error(
-          `AgentRender CLI did not exit. stdout=${JSON.stringify(stdout)} stderr=${JSON.stringify(redacted(stderr))}`,
+          `Agent HTML Render CLI did not exit. stdout=${JSON.stringify(stdout)} stderr=${JSON.stringify(redacted(stderr))}`,
         ),
       );
     }, 15_000);
@@ -71,13 +71,13 @@ function launchReview(): ReviewRun {
     child.once("close", (code) => {
       clearTimeout(timeout);
       if (code !== 0) {
-        reject(new Error(`AgentRender CLI exited ${code}: ${redacted(stderr)}`));
+        reject(new Error(`Agent HTML Render CLI exited ${code}: ${redacted(stderr)}`));
         return;
       }
       try {
         resolvePromise(JSON.parse(stdout) as CliDelivery);
       } catch (error) {
-        reject(new Error(`AgentRender CLI returned invalid JSON: ${stdout}`, { cause: error }));
+        reject(new Error(`Agent HTML Render CLI returned invalid JSON: ${stdout}`, { cause: error }));
       }
     });
   });
@@ -85,14 +85,14 @@ function launchReview(): ReviewRun {
 }
 
 test.beforeAll(async () => {
-  rootPath = await mkdtemp(join(tmpdir(), "agentrender-e2e-"));
+  rootPath = await mkdtemp(join(tmpdir(), "agent-html-render-e2e-"));
   artifactPath = join(rootPath, "plan.html");
   artifactSource = await readFile(resolve("examples/plan.html"), "utf8");
   await writeFile(artifactPath, artifactSource);
   server = await startServer({ rootPath, token: "e2e-agent-token" });
-  await mkdir(join(rootPath, ".agentrender"), { recursive: true });
+  await mkdir(join(rootPath, ".agent-html-render"), { recursive: true });
   await writeFile(
-    join(rootPath, ".agentrender", "daemon.json"),
+    join(rootPath, ".agent-html-render", "daemon.json"),
     `${JSON.stringify({
       protocolVersion: "1",
       pid: process.pid,
@@ -110,17 +110,17 @@ test.afterAll(async () => {
 });
 
 test("completes a safe two-revision annotation loop", async ({ page }) => {
-  if (!server) throw new Error("AgentRender test server did not start.");
+  if (!server) throw new Error("Agent HTML Render test server did not start.");
   const firstReview = launchReview();
   await firstReview.ready;
   await expect.poll(() => server?.store.list().length).toBe(1);
   const session = server.store.list()[0];
-  if (!session) throw new Error("AgentRender CLI did not create a review session.");
+  if (!session) throw new Error("Agent HTML Render CLI did not create a review session.");
   const reviewUrl = `${server.origin}/session/${session.id}?access=${encodeURIComponent(session.secret)}`;
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(reviewUrl);
 
-  await expect(page.getByText("agentrender", { exact: true })).toBeVisible();
+  await expect(page.getByText("agent-html-render", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Annotate" })).toHaveClass(/active/);
   await expect(page.getByTestId("revision")).toHaveText("r1");
 
@@ -208,7 +208,7 @@ test("completes a safe two-revision annotation loop", async ({ page }) => {
   await expect(page.getByTestId("review-activity")).toContainText("Revision 2 ready");
   await expect(artifact.getByRole("heading", { name: "Invite users at the right moment" })).toBeVisible();
 
-  await page.screenshot({ path: "/tmp/agentrender-review-ui.png", fullPage: true });
+  await page.screenshot({ path: "/tmp/agent-html-render-review-ui.png", fullPage: true });
 
   const finalReview = launchReview();
   await finalReview.ready;

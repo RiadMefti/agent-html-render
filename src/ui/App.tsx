@@ -57,7 +57,7 @@ function reviewActivity(
     return {
       kind: "sending",
       label: "Sending feedback",
-      detail: "AgentRender is saving and delivering your notes. They will stay in the drawer until this succeeds.",
+      detail: "Agent HTML Render is saving and delivering your notes. They will stay in the drawer until this succeeds.",
       meta: `r${session.revision}`,
     };
   }
@@ -73,7 +73,7 @@ function reviewActivity(
     return {
       kind: "offline",
       label: "Reconnecting",
-      detail: "Live revision updates are paused. AgentRender is retrying the local connection.",
+      detail: "Live revision updates are paused. Agent HTML Render is retrying the local connection.",
       meta: `r${session.revision}`,
     };
   }
@@ -124,7 +124,7 @@ function sessionLocation(): { sessionId: string; access: string } {
   const match = window.location.pathname.match(/^\/session\/([^/]+)$/);
   const sessionId = match?.[1];
   const access = new URLSearchParams(window.location.search).get("access");
-  if (!sessionId || !access) throw new Error("The AgentRender session URL is incomplete.");
+  if (!sessionId || !access) throw new Error("The Agent HTML Render session URL is incomplete.");
   return { sessionId: decodeURIComponent(sessionId), access };
 }
 
@@ -172,7 +172,7 @@ export function App(): React.JSX.Element {
     (message: ParentToBridgePayload) => {
       if (!session || !iframeRef.current?.contentWindow) return;
       iframeRef.current.contentWindow.postMessage(
-        { source: "agentrender-shell", token: session.bridgeToken, ...message } satisfies ParentToBridgeMessage,
+        { source: "agent-html-render-shell", token: session.bridgeToken, ...message } satisfies ParentToBridgeMessage,
         "*",
       );
     },
@@ -218,7 +218,7 @@ export function App(): React.JSX.Element {
     source.addEventListener("revision", (event) => {
       const revision = parseReviewEvent(event);
       if (!revision || revision.type !== "revision") {
-        setError("AgentRender received an invalid revision update.");
+        setError("Agent HTML Render received an invalid revision update.");
         return;
       }
       setSession((current) =>
@@ -237,7 +237,7 @@ export function App(): React.JSX.Element {
     source.addEventListener("status", (event) => {
       const status = parseReviewEvent(event);
       if (!status || status.type !== "status") {
-        setError("AgentRender received an invalid session update.");
+        setError("Agent HTML Render received an invalid session update.");
         return;
       }
       setSession((current) =>
@@ -247,7 +247,7 @@ export function App(): React.JSX.Element {
     source.addEventListener("feedback-submitted", (event) => {
       const submitted = parseReviewEvent(event);
       if (!submitted || submitted.type !== "feedback-submitted") {
-        setError("AgentRender received an invalid feedback receipt.");
+        setError("Agent HTML Render received an invalid feedback receipt.");
         return;
       }
       setSession((current) =>
@@ -264,7 +264,7 @@ export function App(): React.JSX.Element {
     source.addEventListener("feedback-delivered", (event) => {
       const delivered = parseReviewEvent(event);
       if (!delivered || delivered.type !== "feedback-delivered") {
-        setError("AgentRender received an invalid delivery update.");
+        setError("Agent HTML Render received an invalid delivery update.");
         return;
       }
       setSession((current) =>
@@ -403,7 +403,7 @@ export function App(): React.JSX.Element {
     return (
       <main className="fatal-state">
         <div className="fatal-copy">
-          <span className="state-brand">agentrender</span>
+          <span className="state-brand">agent-html-render</span>
           <h1>Review unavailable</h1>
           <p>{error}</p>
         </div>
@@ -414,8 +414,8 @@ export function App(): React.JSX.Element {
   if (!session) {
     return (
       <main className="loading-state">
-        <span className="state-brand">agentrender</span>
-        <p>Opening AgentRender…</p>
+        <span className="state-brand">agent-html-render</span>
+        <p>Opening Agent HTML Render…</p>
       </main>
     );
   }
@@ -428,7 +428,7 @@ export function App(): React.JSX.Element {
     <main className="review-app">
       <header className="topbar">
         <div className="brand">
-          <strong>agentrender</strong>
+          <strong>agent-html-render</strong>
           <span aria-hidden="true">/</span>
           <span className="current-artifact" title={session.artifactRelativePath}>
             {session.artifactRelativePath}
@@ -502,7 +502,7 @@ export function App(): React.JSX.Element {
           {ended ? (
             <div className="ended-overlay">
               <div>
-                <span className="state-brand">agentrender</span>
+                <span className="state-brand">agent-html-render</span>
                 <h1>Review complete</h1>
                 <p>Final feedback was sent to the agent.</p>
               </div>

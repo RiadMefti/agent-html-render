@@ -81,7 +81,7 @@ export class SessionStore extends EventEmitter {
 
   constructor(readonly rootPath: string) {
     super();
-    this.stateDirectory = join(rootPath, ".agentrender");
+    this.stateDirectory = join(rootPath, ".agent-html-render");
     this.sessionsDirectory = join(this.stateDirectory, "sessions");
   }
 
@@ -249,13 +249,13 @@ export class SessionStore extends EventEmitter {
 
   private requireSession(id: string): SessionRecord {
     const session = this.sessions.get(id);
-    if (!session) throw new Error("Unknown AgentRender session.");
+    if (!session) throw new Error("Unknown Agent HTML Render session.");
     return session;
   }
 
   private requireOpen(id: string): SessionRecord {
     const session = this.requireSession(id);
-    if (session.status !== "open") throw new Error("This AgentRender session has ended.");
+    if (session.status !== "open") throw new Error("This Agent HTML Render session has ended.");
     return session;
   }
 

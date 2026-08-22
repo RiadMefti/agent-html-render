@@ -1,14 +1,14 @@
 # Changelog
 
-All notable changes to AgentRender are documented here.
+All notable changes to Agent HTML Render are documented here.
 
 ## 0.2.0 — 2026-08-22
 
-- Renamed the project, repository, package, CLI, review shell, and portable skill from AgentLens to AgentRender.
-- Published the canonical unscoped package as `agentrender`, designed to run through `npx agentrender@latest`.
-- Moved project-local state and default artifacts to `.agentrender/` and stable artifact anchors to `data-agentrender-id`.
-- Preserved resolution of legacy `data-agentlens-id` anchors and added explicit migration guidance for existing projects.
-- Deprecated `@rimef/agentlens` in favor of `agentrender`.
+- Renamed the project, repository, package, CLI, review shell, and portable skill from AgentLens to Agent HTML Render.
+- Published the canonical unscoped package and executable as `agent-html-render`, designed to run through `npx agent-html-render@latest`.
+- Moved project-local state and default artifacts to `.agent-html-render/` and stable artifact anchors to `data-agent-html-render-id`.
+- Preserved resolution of legacy `data-agentlens-id` and pre-release `data-agentrender-id` anchors, with explicit migration guidance for existing projects.
+- Deprecated `@rimef/agentlens` in favor of `agent-html-render`.
 
 ## Earlier AgentLens releases
 

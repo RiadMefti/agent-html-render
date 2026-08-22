@@ -8,7 +8,7 @@ import {
 const target = {
   kind: "element" as const,
   tag: "h2",
-  cssPath: '[data-agentrender-id="phase"] > h2',
+  cssPath: '[data-agent-html-render-id="phase"] > h2',
   domPath: [1, 2],
   text: "Offer",
   headingPath: ["Rollout", "Offer"],
@@ -18,14 +18,14 @@ describe("bridge message guards", () => {
   it("accepts bounded messages with the expected channel token", () => {
     expect(
       isBridgeToParentMessage(
-        { source: "agentrender-bridge", token: "token", type: "target-selected", target },
+        { source: "agent-html-render-bridge", token: "token", type: "target-selected", target },
         "token",
       ),
     ).toBe(true);
     expect(
       isParentToBridgeMessage(
         {
-          source: "agentrender-shell",
+          source: "agent-html-render-shell",
           token: "token",
           type: "show-annotations",
           annotations: [
@@ -45,14 +45,14 @@ describe("bridge message guards", () => {
   it("rejects spoofed, malformed, and oversized bridge payloads", () => {
     expect(
       isBridgeToParentMessage(
-        { source: "agentrender-bridge", token: "wrong", type: "target-selected", target },
+        { source: "agent-html-render-bridge", token: "wrong", type: "target-selected", target },
         "token",
       ),
     ).toBe(false);
     expect(
       isBridgeToParentMessage(
         {
-          source: "agentrender-bridge",
+          source: "agent-html-render-bridge",
           token: "token",
           type: "target-selected",
           target: { ...target, headingPath: null },
@@ -63,7 +63,7 @@ describe("bridge message guards", () => {
     expect(
       isParentToBridgeMessage(
         {
-          source: "agentrender-shell",
+          source: "agent-html-render-shell",
           token: "token",
           type: "show-annotations",
           annotations: Array.from({ length: 101 }, () => ({})),

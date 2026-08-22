@@ -2,7 +2,8 @@ import { defineConfig } from "@playwright/test";
 import { existsSync } from "node:fs";
 
 const chromiumPath =
-  process.env.AGENTRENDER_CHROMIUM_PATH ?? (existsSync("/usr/bin/chromium") ? "/usr/bin/chromium" : undefined);
+  process.env.AGENT_HTML_RENDER_CHROMIUM_PATH ??
+  (existsSync("/usr/bin/chromium") ? "/usr/bin/chromium" : undefined);
 
 export default defineConfig({
   testDir: "tests/e2e",

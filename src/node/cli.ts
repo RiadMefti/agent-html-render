@@ -17,7 +17,7 @@ import { installProjectSkill } from "./install.js";
 
 const VERSION = "0.2.0";
 const MODULE_DIRECTORY = dirname(fileURLToPath(import.meta.url));
-const BUNDLED_SKILL_DIRECTORY = resolve(MODULE_DIRECTORY, "../../skills/agentrender");
+const BUNDLED_SKILL_DIRECTORY = resolve(MODULE_DIRECTORY, "../../skills/agent-html-render");
 
 interface ParsedOptions {
   positionals: string[];
@@ -77,14 +77,14 @@ function assertOptions(
 }
 
 function usage(): string {
-  return `AgentRender ${VERSION}
+  return `Agent HTML Render ${VERSION}
 
 Usage:
-  agentrender review <file.html> [--root <directory>] [--no-open] [--format json|markdown]
-  agentrender status [--root <directory>]
-  agentrender stop [--root <directory>]
-  agentrender install-skill [--root <directory>]
-  agentrender --help
+  agent-html-render review <file.html> [--root <directory>] [--no-open] [--format json|markdown]
+  agent-html-render status [--root <directory>]
+  agent-html-render stop [--root <directory>]
+  agent-html-render install-skill [--root <directory>]
+  agent-html-render --help
 
 The review command opens or resumes a local browser session, waits for the
 reviewer to send feedback, prints one bounded response, and exits.`;
@@ -92,7 +92,7 @@ reviewer to send feedback, prints one bounded response, and exits.`;
 
 async function responseJson<T>(response: Response): Promise<T> {
   const body = (await response.json().catch(() => ({ error: response.statusText }))) as T & { error?: string };
-  if (!response.ok) throw new Error(body.error ?? `AgentRender request failed with HTTP ${response.status}.`);
+  if (!response.ok) throw new Error(body.error ?? `Agent HTML Render request failed with HTTP ${response.status}.`);
   return body;
 }
 
@@ -138,16 +138,16 @@ async function review(options: ParsedOptions): Promise<void> {
   const metadata = await ensureDaemon(rootPath);
   const { session, cursor } = await openSession(metadata, rootPath, artifactInput);
   writeStderr(
-    `[agentrender] ${session.status === "open" ? "Reviewing" : "Opening"} ${session.artifactRelativePath}\n` +
-      `[agentrender] ${session.reviewUrl}\n` +
-      "[agentrender] Waiting for Send to Agent or Send & End…\n",
+    `[agent-html-render] ${session.status === "open" ? "Reviewing" : "Opening"} ${session.artifactRelativePath}\n` +
+      `[agent-html-render] ${session.reviewUrl}\n` +
+      "[agent-html-render] Waiting for Send to Agent or Send & End…\n",
   );
   if (!options.flags.has("--no-open") && session.connectedReviewers === 0) {
     try {
       await open(session.reviewUrl, { wait: false });
     } catch (error) {
       const reason = error instanceof Error ? error.message : String(error);
-      writeStderr(`[agentrender] Could not open a browser automatically (${reason}). Use the URL above.\n`);
+      writeStderr(`[agent-html-render] Could not open a browser automatically (${reason}). Use the URL above.\n`);
     }
   }
   const delivery = await waitForFeedback(metadata, session.id, cursor);
@@ -163,7 +163,7 @@ async function status(options: ParsedOptions): Promise<void> {
   const rootPath = await realpath(resolve(options.values.get("--root") ?? process.cwd()));
   const metadata = await currentDaemon(rootPath);
   if (!metadata) {
-    writeStdout("AgentRender daemon is not running.\n");
+    writeStdout("Agent HTML Render daemon is not running.\n");
     return;
   }
   const response = await daemonRequest(metadata, "/api/agent/sessions");
@@ -185,12 +185,12 @@ async function stop(options: ParsedOptions): Promise<void> {
   const rootPath = await realpath(resolve(options.values.get("--root") ?? process.cwd()));
   const metadata = await currentDaemon(rootPath);
   if (!metadata) {
-    writeStdout("AgentRender daemon is not running.\n");
+    writeStdout("Agent HTML Render daemon is not running.\n");
     return;
   }
   const response = await daemonRequest(metadata, "/api/agent/stop", { method: "POST" });
   await responseJson(response);
-  writeStdout("AgentRender daemon stopped.\n");
+  writeStdout("Agent HTML Render daemon stopped.\n");
 }
 
 async function installSkill(options: ParsedOptions): Promise<void> {
@@ -198,10 +198,10 @@ async function installSkill(options: ParsedOptions): Promise<void> {
   const rootPath = await realpath(resolve(options.values.get("--root") ?? process.cwd()));
   const result = await installProjectSkill(rootPath, BUNDLED_SKILL_DIRECTORY);
   writeStdout(
-    `AgentRender skill ${result.canonicalStatus} at ${result.canonicalPath}.\n` +
+    `Agent HTML Render skill ${result.canonicalStatus} at ${result.canonicalPath}.\n` +
       `Claude Code adapter ${result.claudeStatus} at ${result.claudePath}.\n` +
       (result.legacyPaths.length > 0
-        ? `Legacy AgentLens skill detected at ${result.legacyPaths.join(", ")}. Remove it after verifying the AgentRender skill.\n`
+        ? `Legacy AgentLens or AgentRender skill detected at ${result.legacyPaths.join(", ")}. Remove it after verifying the Agent HTML Render skill.\n`
         : ""),
   );
 }
@@ -233,6 +233,6 @@ try {
   await main();
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);
-  writeStderr(`[agentrender] ${message}\n`);
+  writeStderr(`[agent-html-render] ${message}\n`);
   process.exitCode = 1;
 }
