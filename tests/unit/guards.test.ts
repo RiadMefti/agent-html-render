@@ -24,6 +24,72 @@ describe("bridge message guards", () => {
     ).toBe(true);
     expect(
       isBridgeToParentMessage(
+        { source: "agent-html-render-bridge", token: "token", type: "keyboard-target-changed", target },
+        "token",
+      ),
+    ).toBe(true);
+    expect(
+      isBridgeToParentMessage(
+        { source: "agent-html-render-bridge", token: "token", type: "selection-mode-ready", enabled: true },
+        "token",
+      ),
+    ).toBe(true);
+    for (const type of [
+      "keyboard-target-cleared",
+      "keyboard-target-unavailable",
+      "selection-cancelled",
+    ] as const) {
+      expect(
+        isBridgeToParentMessage(
+          { source: "agent-html-render-bridge", token: "token", type },
+          "token",
+        ),
+      ).toBe(true);
+    }
+    expect(
+      isBridgeToParentMessage(
+        {
+          source: "agent-html-render-bridge",
+          token: "token",
+          type: "selection-rejected",
+          reason: "text-selection-too-long",
+          maximum: 1_200,
+        },
+        "token",
+      ),
+    ).toBe(true);
+    expect(
+      isBridgeToParentMessage(
+        {
+          source: "agent-html-render-bridge",
+          token: "token",
+          type: "selection-rejected",
+          reason: "keyboard-text-unavailable",
+        },
+        "token",
+      ),
+    ).toBe(true);
+    expect(
+      isBridgeToParentMessage(
+        {
+          source: "agent-html-render-bridge",
+          token: "token",
+          type: "overlay-layout",
+          overlays: [
+            {
+              id: "history:1:annotation",
+              kind: "annotation",
+              rect: { left: 12, top: 24, width: 180, height: 40 },
+              label: "F1.1",
+              tone: "history",
+            },
+          ],
+        },
+        "token",
+      ),
+    ).toBe(true);
+    expect(
+      isBridgeToParentMessage(
         {
           source: "agent-html-render-bridge",
           token: "token",
@@ -39,12 +105,40 @@ describe("bridge message guards", () => {
           source: "agent-html-render-shell",
           token: "token",
           type: "show-annotations",
-          annotations: [
+          markers: [
             {
-              id: "annotation",
-              comment: "Rename this phase.",
-              createdAt: "2026-08-22T00:00:00.000Z",
-              target,
+              id: "draft:annotation",
+              label: "1",
+              tone: "draft",
+              annotation: {
+                id: "annotation",
+                comment: "Rename this phase.",
+                createdAt: "2026-08-22T00:00:00.000Z",
+                target,
+              },
+            },
+          ],
+        },
+        "token",
+      ),
+    ).toBe(true);
+    expect(
+      isParentToBridgeMessage(
+        {
+          source: "agent-html-render-shell",
+          token: "token",
+          type: "resolve-annotations",
+          markers: [
+            {
+              id: "history:1:annotation",
+              label: "F1.1",
+              tone: "history",
+              annotation: {
+                id: "annotation",
+                comment: "Rename this phase.",
+                createdAt: "2026-08-22T00:00:00.000Z",
+                target,
+              },
             },
           ],
         },
@@ -56,7 +150,102 @@ describe("bridge message guards", () => {
   it("rejects spoofed, malformed, and oversized bridge payloads", () => {
     expect(
       isBridgeToParentMessage(
+        { source: "agent-html-render-bridge", token: "token", type: "selection-mode-ready", enabled: "yes" },
+        "token",
+      ),
+    ).toBe(false);
+    expect(
+      isBridgeToParentMessage(
+        {
+          source: "agent-html-render-bridge",
+          token: "token",
+          type: "target-selected",
+          target: { ...target, semanticSignature: "a11y-v1:not-a-digest" },
+        },
+        "token",
+      ),
+    ).toBe(false);
+    expect(
+      isBridgeToParentMessage(
+        {
+          source: "agent-html-render-bridge",
+          token: "token",
+          type: "keyboard-target-changed",
+          target: { ...target, domPath: Array.from({ length: 65 }, () => 0) },
+        },
+        "token",
+      ),
+    ).toBe(false);
+    expect(
+      isBridgeToParentMessage(
+        {
+          source: "agent-html-render-bridge",
+          token: "token",
+          type: "target-selected",
+          target: { ...target, identityUnresolvable: false },
+        },
+        "token",
+      ),
+    ).toBe(false);
+    expect(
+      isBridgeToParentMessage(
+        {
+          source: "agent-html-render-bridge",
+          token: "token",
+          type: "target-selected",
+          target: { ...target, textSignature: "text-v1:not-a-digest" },
+        },
+        "token",
+      ),
+    ).toBe(false);
+    expect(
+      isBridgeToParentMessage(
+        {
+          source: "agent-html-render-bridge",
+          token: "token",
+          type: "keyboard-target-changed",
+          target: { ...target, displayText: "x".repeat(1_201) },
+        },
+        "token",
+      ),
+    ).toBe(false);
+    expect(
+      isBridgeToParentMessage(
         { source: "agent-html-render-bridge", token: "wrong", type: "target-selected", target },
+        "token",
+      ),
+    ).toBe(false);
+    expect(
+      isBridgeToParentMessage(
+        {
+          source: "agent-html-render-bridge",
+          token: "token",
+          type: "selection-rejected",
+          reason: "text-selection-too-long",
+          maximum: 1_201,
+        },
+        "token",
+      ),
+    ).toBe(false);
+    expect(
+      isBridgeToParentMessage(
+        {
+          source: "agent-html-render-bridge",
+          token: "token",
+          type: "overlay-layout",
+          overlays: [{ id: "hover", kind: "hover", rect: { left: 0, top: 0, width: Infinity, height: 20 } }],
+        },
+        "token",
+      ),
+    ).toBe(false);
+    expect(
+      isBridgeToParentMessage(
+        {
+          source: "agent-html-render-bridge",
+          token: "token",
+          type: "overlay-layout",
+          overlays: [{ id: "fake", kind: "annotation", rect: { left: 0, top: 0, width: 20, height: 20 } }],
+        },
         "token",
       ),
     ).toBe(false);
@@ -77,7 +266,7 @@ describe("bridge message guards", () => {
           source: "agent-html-render-bridge",
           token: "token",
           type: "annotation-activated",
-          annotationId: "x".repeat(121),
+          annotationId: "x".repeat(257),
         },
         "token",
       ),
@@ -88,7 +277,7 @@ describe("bridge message guards", () => {
           source: "agent-html-render-shell",
           token: "token",
           type: "show-annotations",
-          annotations: Array.from({ length: 101 }, () => ({})),
+          markers: Array.from({ length: 151 }, () => ({})),
         },
         "token",
       ),
@@ -101,11 +290,21 @@ describe("bridge message guards", () => {
         type: "feedback-submitted",
         receipt: {
           sequence: 2,
+          submissionId: "submission-2",
           status: "feedback",
           sentAt: "2026-08-22T00:00:00.000Z",
           revision: 3,
         },
         updatedAt: "2026-08-22T00:00:00.000Z",
+      }),
+    ).toBe(true);
+    expect(
+      isReviewEvent({
+        type: "feedback-reviewed",
+        sequence: 2,
+        subject: "message",
+        decision: "resolved",
+        updatedAt: "2026-08-22T00:00:01.000Z",
       }),
     ).toBe(true);
     expect(

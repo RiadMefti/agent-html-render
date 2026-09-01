@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node: [24.15.0, 26.x]
+        node: [22.22.2, 24.15.0, 26.x]
 
     steps:
       - name: Check out repository
@@ -51,6 +51,10 @@ jobs:
       - name: Run production browser test
         if: matrix.node == '26.x'
         run: npm run test:e2e
+
+      - name: Verify portable host integrations
+        if: matrix.node == '26.x'
+        run: npm run smoke:agents
 
       - name: Verify package contents
         if: matrix.node == '26.x'

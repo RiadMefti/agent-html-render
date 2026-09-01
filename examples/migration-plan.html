@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Session storage migration plan</title>
+    <style>
+      :root { color-scheme: light; --bg: #fafafa; --text: #171717; --muted: #5f5f5f; --line: #e1e1e1; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      * { box-sizing: border-box; }
+      body { margin: 0; color: var(--text); background: var(--bg); }
+      main { width: min(920px, calc(100% - 40px)); margin: auto; padding: 64px 0 84px; }
+      .eyebrow { color: var(--muted); font-size: 11px; }
+      h1 { max-width: 700px; margin: 22px 0 12px; font-size: clamp(30px, 5vw, 44px); font-weight: 560; line-height: 1.08; letter-spacing: -.04em; }
+      .lede { max-width: 700px; margin: 0; color: var(--muted); font-size: 14px; line-height: 1.65; }
+      ol { margin: 52px 0 0; padding: 0; list-style: none; counter-reset: phase; border-top: 1px solid var(--text); }
+      li { counter-increment: phase; display: grid; grid-template-columns: 110px 1fr 190px; gap: 24px; padding: 24px 0; border-bottom: 1px solid var(--line); }
+      li::before { content: "0" counter(phase); color: var(--muted); font-size: 11px; }
+      h2 { margin: 0 0 7px; font-size: 15px; font-weight: 550; }
+      p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
+      .gate { color: var(--text); font-size: 12px; }
+      .footer { display: grid; grid-template-columns: 110px 1fr; gap: 24px; margin-top: 38px; font-size: 13px; line-height: 1.6; }
+      .footer strong { color: var(--muted); font-size: 11px; font-weight: 500; }
+      @media (max-width: 700px) { main { padding-top: 44px; } li { grid-template-columns: 42px 1fr; } .gate { grid-column: 2; } .footer { grid-template-columns: 1fr; gap: 8px; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">Migration plan · Draft for review</p>
+      <h1 data-agent-html-render-id="migration-title">Move sessions from memory to durable storage</h1>
+      <p class="lede">Remove single-instance affinity without forcing a flag-day cutover or invalidating active sessions.</p>
+
+      <ol aria-label="Migration phases">
+        <li data-agent-html-render-id="phase-contract"><div><h2>Define the storage contract</h2><p>Freeze serialization, TTL, and conflict behavior behind the existing session interface.</p></div><p class="gate">Gate: compatibility fixtures pass against both stores.</p></li>
+        <li data-agent-html-render-id="phase-dual-write"><div><h2>Shadow and compare</h2><p>Write to both stores while reads remain in memory. Compare sampled records without logging session content.</p></div><p class="gate">Gate: mismatch rate stays below 0.01% for seven days.</p></li>
+        <li data-agent-html-render-id="phase-read-switch"><div><h2>Switch reads by cohort</h2><p>Move internal tenants first, then 5%, 25%, and 100%. Keep dual writes during the ramp.</p></div><p class="gate">Rollback: restore memory reads without data conversion.</p></li>
+        <li data-agent-html-render-id="phase-retire"><div><h2>Retire memory authority</h2><p>Stop dual writes after the longest session TTL and remove affinity from the load balancer.</p></div><p class="gate">Gate: replay and regional failover drills pass.</p></li>
+      </ol>
+
+      <aside class="footer" data-agent-html-render-id="migration-open-decision"><strong>Open decision</strong><span>Do we extend the dual-write window for enterprise tenants with custom session TTLs?</span></aside>
+    </main>
+  </body>
+</html>

@@ -10,15 +10,27 @@ test("keeps the CLI version synchronized with the npm package", async () => {
 
 test("changes the runtime identity when either served runtime changes", () => {
   const assets = new Map([["index.js", Buffer.from("one")]]);
-  const original = createRuntimeBuildIdentity("<html>one</html>", "bridge-one", assets);
-  expect(createRuntimeBuildIdentity("<html>one</html>", "bridge-one", assets)).toEqual(original);
-  expect(createRuntimeBuildIdentity("<html>two</html>", "bridge-one").buildId).not.toBe(original.buildId);
-  expect(createRuntimeBuildIdentity("<html>one</html>", "bridge-two").buildId).not.toBe(original.buildId);
+  const nodeRuntime = new Map([["node/daemon.js", Buffer.from("runtime-one")]]);
+  const original = createRuntimeBuildIdentity("<html>one</html>", "bridge-one", assets, nodeRuntime);
+  expect(createRuntimeBuildIdentity("<html>one</html>", "bridge-one", assets, nodeRuntime)).toEqual(original);
+  expect(createRuntimeBuildIdentity("<html>two</html>", "bridge-one", assets, nodeRuntime).buildId)
+    .not.toBe(original.buildId);
+  expect(createRuntimeBuildIdentity("<html>one</html>", "bridge-two", assets, nodeRuntime).buildId)
+    .not.toBe(original.buildId);
   expect(
     createRuntimeBuildIdentity(
       "<html>one</html>",
       "bridge-one",
       new Map([["index.js", Buffer.from("two")]]),
+      nodeRuntime,
+    ).buildId,
+  ).not.toBe(original.buildId);
+  expect(
+    createRuntimeBuildIdentity(
+      "<html>one</html>",
+      "bridge-one",
+      assets,
+      new Map([["node/daemon.js", Buffer.from("runtime-two")]]),
     ).buildId,
   ).not.toBe(original.buildId);
 });

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Webhook delivery architecture decision</title>
+    <style>
+      :root { color-scheme: light; --bg: #fafafa; --text: #171717; --muted: #5f5f5f; --line: #dedede; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      * { box-sizing: border-box; }
+      body { margin: 0; color: var(--text); background: var(--bg); }
+      main { width: min(1040px, calc(100% - 40px)); margin: auto; padding: 64px 0 80px; }
+      .eyebrow, th { color: var(--muted); font-size: 11px; font-weight: 500; text-align: left; }
+      h1 { max-width: 760px; margin: 22px 0 12px; font-size: clamp(30px, 5vw, 44px); font-weight: 560; letter-spacing: -.04em; }
+      .lede { max-width: 720px; color: var(--muted); line-height: 1.65; }
+      table { width: 100%; margin-top: 48px; border-collapse: collapse; font-size: 13px; }
+      th, td { padding: 16px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+      th:first-child, td:first-child { padding-left: 0; width: 22%; }
+      td { line-height: 1.55; }
+      .decision { display: grid; grid-template-columns: 180px 1fr; gap: 24px; margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--text); }
+      .decision h2 { margin: 0; font-size: 13px; font-weight: 500; }
+      .decision p { max-width: 680px; margin: 0 0 12px; font-size: 14px; line-height: 1.6; }
+      .open { color: var(--muted); }
+      @media (max-width: 700px) { main { padding-top: 44px; } table { display: block; overflow-x: auto; } .decision { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">Architecture decision · Billing platform</p>
+      <h1 data-agent-html-render-id="decision-title">How should we deliver customer webhooks?</h1>
+      <p class="lede">We need durable delivery, tenant isolation, and replay without making the request path depend on customer endpoints.</p>
+
+      <table aria-label="Architecture options">
+        <thead><tr><th>Option</th><th>Failure isolation</th><th>Operations</th><th>Tradeoff</th></tr></thead>
+        <tbody>
+          <tr data-agent-html-render-id="option-direct"><td>Direct from API</td><td>A slow customer endpoint consumes request capacity.</td><td>Few moving parts.</td><td>Lowest setup cost, weakest reliability.</td></tr>
+          <tr data-agent-html-render-id="option-shared-queue"><td>Shared durable queue</td><td>Retries leave the request path, but a noisy tenant can dominate workers.</td><td>One queue and one worker pool.</td><td>Good default if fairness controls are explicit.</td></tr>
+          <tr data-agent-html-render-id="option-tenant-queue"><td>Queue per tenant</td><td>Strong isolation and independent replay.</td><td>High queue cardinality and lifecycle overhead.</td><td>Best isolation, highest operational cost.</td></tr>
+        </tbody>
+      </table>
+
+      <section class="decision" data-agent-html-render-id="recommended-decision">
+        <h2>Recommendation</h2>
+        <div>
+          <p>Use a shared durable queue partitioned by tenant, with per-tenant concurrency and retry budgets. Store immutable delivery attempts for 14 days so support can replay safely.</p>
+          <p class="open"><strong>Open decision:</strong> should replay preserve the original signing secret or use the tenant’s current secret?</p>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

@@ -1,13 +1,14 @@
 {
   "name": "agent-html-render",
-  "version": "0.4.0",
-  "description": "Review agent-written HTML locally and send element-level feedback to the agent.",
+  "version": "0.5.0",
+  "description": "Review agent plans and technical decisions locally with revision-aware, element-level feedback.",
   "type": "module",
   "bin": {
     "agent-html-render": "dist/node/cli.js"
   },
   "files": [
     "dist",
+    "docs",
     "examples",
     "skills",
     "README.md",
@@ -18,9 +19,9 @@
     "build:node": "tsc -p tsconfig.node.json",
     "build:ui": "vite build --config vite.config.ts",
     "build:bridge": "vite build --config vite.bridge.config.ts",
-    "typecheck": "tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.ui.json --noEmit",
+    "typecheck": "tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.ui.json --noEmit && tsc -p tsconfig.tests.json",
     "dev:cli": "tsx src/node/cli.ts",
-    "test": "vitest run --exclude tests/e2e/**",
+    "test": "vitest run",
     "test:e2e": "npm run build && playwright test",
     "test:all": "npm run typecheck && npm test && npm run test:e2e && npm run smoke:agents:strict",
     "smoke:agents": "node scripts/smoke-agents.mjs",
@@ -28,7 +29,7 @@
     "prepack": "npm run build"
   },
   "engines": {
-    "node": "^24.15.0 || >=26.0.0"
+    "node": "^22.22.2 || ^24.15.0 || ^26.0.0"
   },
   "keywords": [
     "agents",
@@ -61,6 +62,7 @@
     "chokidar": "^5.0.0",
     "express": "^5.2.1",
     "open": "^11.0.1",
+    "parse5": "^8.0.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "zod": "^4.4.3"

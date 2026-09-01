@@ -4,7 +4,7 @@ Keep changes local-first, vendor-neutral, and small enough to review.
 
 ## Development setup
 
-Agent HTML Render requires Node.js 24.15 or newer.
+Agent HTML Render requires Linux for the full daemon workflow plus Node.js 22.22.2+ on Node 22, Node.js 24.15+ on Node 24, or Node.js 26.
 
 ```bash
 npm ci

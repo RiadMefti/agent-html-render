@@ -9,8 +9,8 @@ Use these defaults only when the user and project provide no design direction. T
   color-scheme: light;
   --background: #fafafa;
   --text: #171717;
-  --muted: #858585;
-  --quiet: #a6a6a6;
+  --muted: #5f5f5f;
+  --quiet: #737373;
   --faint: #e9e9e9;
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
 }
